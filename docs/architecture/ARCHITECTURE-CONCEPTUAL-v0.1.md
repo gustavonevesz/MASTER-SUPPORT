@@ -98,6 +98,16 @@ stateDiagram-v2
 
 Deduplicação é at-most-once apenas para processamento semântico dentro da janela limitada de IDs mantida por Session; não há exactly-once. Uma duplicata de heartbeat pode receber novo ack, mas não renova o lease novamente. Ordem global não é garantida; request/reply usa `correlationId`.
 
+## Backbone de observação read-only implementado
+
+Na FOUNDATION-003, `AgentHello` oferece `system.runtime.summary@1.0` e a Session guarda apenas a interseção com o catálogo do Server. Uma registry explícita no Agent associa ID/versão a descriptor R0, `ReadOnly`, `RequiresAdmin=false` e handler C# concreto; texto executável, reflection e seleção de tipo/método não atravessam o protocolo.
+
+O Server cria `ObservationRequest` somente para Session `Active` e capability negociada. `requestId` identifica a operação e permanece distinto dos `messageId`; `correlationId=requestId` reúne request, aceite e desfecho. O lifecycle em memória é `Created → Accepted → Executing → Result|Failure|Timeout`. O Agent aplica timeout/cancelamento, 16 KiB e deduplicação operacional limitada; repetição concluída devolve a resposta em cache sem executar novamente.
+
+Evidence contém o payload coletado e sua procedência como `RAW`; Observation contém a afirmação factual determinística sustentada por aquela Evidence. Logs carregam apenas IDs, estado, duração e tamanho. A consulta dev-only omite o payload RAW. Um futuro Job poderá orquestrar uma Capability em nome de Action/policy, mas não substitui Evidence/Observation e não foi criado nesta etapa.
+
+Revogação agora muda a Session para `Revoked` e fecha imediatamente a conexão registrada. O callback de desconexão não rebaixa o estado terminal, resume falha e nenhum novo request é despachado.
+
 ## Estados mínimos
 
 - Session: `Created → Connecting → Active → Closing → Closed|Expired|Failed`.

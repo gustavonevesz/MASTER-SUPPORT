@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.master-support.invalid/protocol/1.0/observation-failed.schema.json",
+  "title": "ObservationFailed",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "messageType", "sessionId", "correlationId", "timestamp", "payload"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "const": "observation.failed" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "required": ["requestId", "code", "message"],
+      "properties": {
+        "requestId": { "type": "string", "format": "uuid" },
+        "code": { "enum": ["invalid_session", "unknown_capability", "duplicate_request", "timeout", "payload_too_large", "handler_failed"] },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

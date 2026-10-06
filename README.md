@@ -4,7 +4,7 @@ Master Support é a futura plataforma inteligente de helpdesk e administração 
 
 ## Estado atual
 
-O repositório contém a **FOUNDATION-002**: contratos JSON Schema, Control Plane TypeScript, Agent C# e um backbone de Support Session temporária em desenvolvimento. Eles provam comunicação real, lifecycle e compatibilidade; não constituem um produto operacional.
+O repositório contém a **FOUNDATION-003**: contratos JSON Schema, Control Plane TypeScript, Agent C#, Support Session temporária e a primeira solicitação operacional estritamente somente leitura. Ela prova o caminho real Server → Agent → Evidence → Observation; não constitui um produto operacional.
 
 O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidores, Linux, impressoras, scanners, gerenciamento persistente, IA autônoma e ML permanecem fora do primeiro incremento.
 
@@ -34,13 +34,13 @@ O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidor
 
 ## O que existe
 
-- `apps/server`: Fastify com `GET /health`, `GET /version`, adapter WebSocket experimental em `/session`, store em memória e `/dev/sessions` sanitizado somente em loopback.
-- `apps/agent`: console application temporário com modo explícito `connect-dev`.
+- `apps/server`: Fastify com health/version, adapter WebSocket experimental, stores de Session/Observation em memória e endpoints `/dev` sanitizados somente em loopback.
+- `apps/agent`: console application temporário com modo explícito `connect-dev`, registry local fechado e o handler nativo `system.runtime.summary@1.0` R0/ReadOnly/non-admin.
 - `packages/contracts`: JSON Schema 2020-12 para Hello, envelope, capability descriptor e erro.
 - fixtures e testes TypeScript, .NET e round-trip cross-language por arquivos temporários.
 - CI mínimo e `scripts/verify.ps1`.
 
-Não existem comando remoto, Job, PowerShell no Agent, autenticação de produção, autorização, persistência, banco, Web UI, IA ou privilégio administrativo. O resume token é exclusivamente dev-only e não representa identidade confiável.
+Não existem comando remoto, Job, PowerShell/shell no Agent, autenticação de produção, autorização, persistência, banco, Web UI, IA ou privilégio administrativo. O resume token é exclusivamente dev-only e não representa identidade confiável. O WebSocket continua Trial e o validador JSON Schema C# continua limitado ao subconjunto da ADR-007.
 
 ## Requisitos de desenvolvimento
 
@@ -86,8 +86,17 @@ Sessão local de desenvolvimento, com o Server já iniciado:
 dotnet run --project apps/agent/src/MasterSupport.Agent.csproj -- connect-dev
 ```
 
-O Agent conecta explicitamente a `ws://127.0.0.1:3000/session`, faz handshake e heartbeat e tenta `SessionClose` no Ctrl+C. Não use esse canal fora de ambiente local: ele não possui autenticação de produção.
+O Agent conecta explicitamente a `ws://127.0.0.1:3000/session`, anuncia `system.runtime.summary@1.0`, faz handshake/heartbeat e tenta `SessionClose` no Ctrl+C. Não use esse canal fora de ambiente local: ele não possui autenticação de produção.
+
+Com uma Session ativa, o único disparo operacional permitido é:
+
+```powershell
+$sessionId = '<session-id exibido pelo Agent>'
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:3000/dev/sessions/$sessionId/observations" -ContentType 'application/json' -Body '{"capabilityId":"system.runtime.summary"}'
+```
+
+`GET /dev/sessions/:sessionId/observations` apresenta lifecycle, Observation e metadados de Evidence, mas nunca seu payload RAW. Timeout padrão é 5 segundos e o payload operacional é limitado a 16 KiB, sem streaming. Revogar uma Session fecha proativamente sua conexão ativa.
 
 ## Regra de evolução
 
-Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A próxima etapa proposta é `FOUNDATION-003 — Read-only Observation Backbone`; ela não faz parte desta entrega.
+Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A próxima etapa recomendada é `FOUNDATION-004 — Observation Hardening & Reconciliation`: endurecer cancelamento/reconciliação, quotas e testes de transporte da observação sem criar ação mutável, Job completo ou Preflight. Ela não faz parte desta entrega.

@@ -19,3 +19,6 @@ Estas questões podem alterar segurança, protocolo ou modelo; não devem ser re
 | OQ-013 | Qual será a estratégia de atualização, assinatura e revogação do Runtime antes de qualquer modo persistente? | supply chain | antes de Managed Endpoint |
 | OQ-014 | Qual conjunto de dados pode chegar a um LLM e qual serviço fará minimização/redaction? | secrets/prompt injection | antes de IA |
 | OQ-015 | Qual biblioteca JSON Schema C# madura substituirá o validador mínimo quando surgir `$ref`, composição, condicional ou formato customizado? | evitar interpretação parcial/divergente | obrigatoriamente antes da primeira keyword fora do subconjunto ADR-007 |
+| OQ-016 | Como reconciliar Observation aceita/em execução quando o canal cai ou a Session é revogada, incluindo resultado tardio? | evitar estado falso e reexecução acidental | FOUNDATION-004 |
+| OQ-017 | Quais quotas de concorrência e frequência devem limitar solicitações R0 por Session e Agent? | servidor abusivo e resource exhaustion | FOUNDATION-004 |
+| OQ-018 | Qual parte de uma Observation factual pode ser exposta além do endpoint dev-only sem revelar Evidence RAW? | minimização, acesso e futura UI | antes de qualquer UI/persistência |

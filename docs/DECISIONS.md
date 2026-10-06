@@ -13,3 +13,5 @@
 | [ADR-009](adr/ADR-009-experimental-realtime-transport.md) | WebSocket atrás de adapter, somente em Trial | Trial |
 
 Status permitidos: `Proposto`, `Trial`, `Aceito`, `Rejeitado`, `Substituído`. Os seis ADRs iniciais foram aceitos na GATE-000; ADR-007 e ADR-008 foram aceitos na FOUNDATION-001; ADR-009 permanece em Trial. Alterações materiais serão feitas por novo ADR ou revisão explicitamente versionada, preservando histórico no Git.
+
+A FOUNDATION-003 concretiza, sem nova decisão arquitetural, a ADR-004: registry local explícita e uma coleta R0/ReadOnly em C#. ObservationRequest não foi promovida a Job; a relação futura foi registrada na própria ADR-004. A ADR-009 continua Trial e a ADR-007 continua exigindo substituição do validador antes de qualquer keyword fora do subconjunto aceito.

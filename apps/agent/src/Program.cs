@@ -39,8 +39,14 @@ static async Task<int> RunAsync(string[] args)
                 var parsed = contracts.DeserializeAgentHello(json);
                 StructuredLog.Write("info", "agent_hello.validated", parsed.MessageId);
                 return 0;
+            case "validate-contract" when args.Length == 3:
+                var contractJson = await File.ReadAllTextAsync(args[2]);
+                var errors = contracts.ValidateContract(contractJson, args[1]);
+                if (errors.Count > 0) throw new System.Text.Json.JsonException(string.Join(Environment.NewLine, errors));
+                StructuredLog.Write("info", "contract.validated");
+                return 0;
             default:
-                Console.Error.WriteLine("Usage: agent [connect-dev [ws-url] [heartbeat-count]|emit-agent-hello <path>|validate-agent-hello <path>]");
+                Console.Error.WriteLine("Usage: agent [connect-dev [ws-url] [heartbeat-count]|emit-agent-hello <path>|validate-agent-hello <path>|validate-contract <schema> <path>]");
                 return 2;
         }
     }

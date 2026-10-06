@@ -8,4 +8,6 @@ JSON Schema 2020-12 is the language-neutral source of truth. Schemas are self-co
 
 Protocol `1.0` means the first contract line, not product maturity. Consumers reject unsupported versions. Compatible additions must remain optional; breaking changes require a new protocol version. JSON property names are protocol wire names and therefore stable inside a protocol line.
 
-No schema defines authentication, trusted Asset identity, remote jobs, or command execution.
+FOUNDATION-003 adds `ObservationRequest`, `ObservationAccepted`, `ObservationResult` and `ObservationFailed`. They model one negotiated R0/read-only collection, with Evidence RAW and factual Observation as distinct values. `requestId` identifies the operation; `messageId` identifies each wire message; `correlationId` carries the request ID across the exchange.
+
+All current schemas remain inside the documented C# validator subset. No schema defines authentication, trusted Asset identity, remote jobs, arbitrary command execution, policy or approval.

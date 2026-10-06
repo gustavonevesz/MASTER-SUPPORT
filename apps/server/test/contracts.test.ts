@@ -4,6 +4,8 @@ import {
   readJson,
   repositoryPath,
   validateAgentHello,
+  validateObservationRequest,
+  validateSessionMessage,
   validateServerHello,
 } from "../src/contracts.js";
 import { createAgentHello, createServerHello } from "../src/messages.js";
@@ -36,4 +38,29 @@ test("serializes messages that remain valid", () => {
     expiresAt: new Date(now.getTime() + 15_000), resumeToken: "synthetic-development-token-0000000000000000",
     capabilities: [],
   }, 3)))).valid, true);
+});
+
+test("ObservationRequest and distinct Evidence/Observation result satisfy shared schemas", () => {
+  const requestId = crypto.randomUUID();
+  const sessionId = crypto.randomUUID();
+  const request = { protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.request", sessionId,
+    correlationId: requestId, timestamp: new Date().toISOString(), payload: {
+      requestId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", timeoutMs: 5_000, maxPayloadBytes: 16_384,
+    } };
+  assert.equal(validateObservationRequest(request).valid, true);
+  const evidenceId = crypto.randomUUID();
+  const result = { protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.result", sessionId,
+    correlationId: requestId, timestamp: new Date().toISOString(), payload: { requestId,
+      evidence: { evidenceId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", collectedAt: new Date().toISOString(),
+        source: "agent.native-runtime-api", dataHandlingState: "RAW", payload: {
+          osPlatform: "Windows", osDescription: "Windows 10", osArchitecture: "x64", processArchitecture: "x64",
+          dotnetRuntime: ".NET 10", agentVersion: "0.1.0", productVersion: "0.1.0", protocolVersion: "1.0", supportSessionMode: "temporary-development",
+        } },
+      observation: { observationId: crypto.randomUUID(), evidenceId, observedAt: new Date().toISOString(),
+        kind: "runtime-summary-collected", statement: "The temporary Agent runtime has the reported platform and architecture properties.",
+        facts: { osPlatform: "Windows", osDescription: "Windows 10", osArchitecture: "x64", processArchitecture: "x64",
+          dotnetRuntime: ".NET 10", agentVersion: "0.1.0", productVersion: "0.1.0", protocolVersion: "1.0", supportSessionMode: "temporary-development" } },
+    } };
+  assert.equal(validateSessionMessage("observation.result", result).valid, true);
+  assert.notEqual(result.payload.evidence.evidenceId, result.payload.observation.observationId);
 });

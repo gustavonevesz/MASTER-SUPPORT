@@ -93,6 +93,14 @@ test("unknown or incompatible capability is not negotiated", () => {
   assert.deepEqual(service.create(offered).capabilities, []);
 });
 
+test("matching runtime summary capability is negotiated into the session", () => {
+  const capability = { id: "system.runtime.summary", version: "1.0" };
+  const { service } = setup([capability]);
+  const hello = createAgentHello();
+  const offered = { ...hello, payload: { ...hello.payload, supportedCapabilities: [capability] } };
+  assert.deepEqual(service.create(offered).capabilities, [capability]);
+});
+
 test("a new in-memory store has no sessions after restart", () => {
   const first = setup();
   first.service.create(createAgentHello());

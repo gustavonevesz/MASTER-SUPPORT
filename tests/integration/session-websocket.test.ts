@@ -111,20 +111,58 @@ test("development sessions endpoint is sanitized", async context => {
   socket.terminate();
 });
 
-test("server revocation is terminal and rejects continued authority", async context => {
+test("server revocation proactively closes the active socket and rejects resume or observation", async context => {
   const running = await server();
   context.after(() => running.app.close());
   const socket = await connect(running.url);
   socket.send(JSON.stringify(createAgentHello()));
   const hello = await receive(socket);
   const sessionId = String(hello["sessionId"]);
+  const closed = new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("revoked socket did not close")), 1_000);
+    socket.once("close", () => { clearTimeout(timer); resolve(); });
+  });
   running.revokeSession(sessionId);
-  socket.send(JSON.stringify({ protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "heartbeat",
-    sessionId, timestamp: new Date().toISOString(), payload: {} }));
-  const error = await receive(socket);
-  assert.equal(error["payload"].code, "session_not_active");
+  await closed;
   assert.equal(running.store.get(sessionId)?.state, "revoked");
-  socket.terminate();
+  const observation = await running.app.inject({ method: "POST", url: `/dev/sessions/${sessionId}/observations`, payload: { capabilityId: "system.runtime.summary" } });
+  assert.equal(observation.statusCode, 409);
+
+  const resumed = await connect(running.url);
+  resumed.send(JSON.stringify({ protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "session.resume.request",
+    sessionId, timestamp: new Date().toISOString(), payload: {
+      agentInstanceId: running.store.get(sessionId)!.agentInstanceId, resumeToken: hello["payload"].resumeToken,
+    } }));
+  assert.equal((await receive(resumed))["payload"].code, "resume_rejected");
+});
+
+test("real .NET Agent executes the one read-only observation and stops after revocation", async context => {
+  const running = await server({ leaseDurationMs: 10_000, heartbeatIntervalMs: 1_000 });
+  context.after(() => running.app.close());
+  const child = spawn("dotnet", [agentDll, "connect-dev", running.url], { cwd: root });
+  context.after(() => { if (!child.killed) child.kill(); });
+  let output = "";
+  let error = "";
+  child.stdout.on("data", data => { output += data.toString(); });
+  child.stderr.on("data", data => { error += data.toString(); });
+  await waitUntil(() => running.store.list()[0]?.capabilities.some(item => item.id === "system.runtime.summary") === true);
+  const session = running.store.list()[0]!;
+  const response = await running.app.inject({ method: "POST", url: `/dev/sessions/${session.id}/observations`, payload: { capabilityId: "system.runtime.summary" } });
+  assert.equal(response.statusCode, 200, response.body);
+  const body = response.json();
+  assert.equal(body.request.state, "result");
+  assert.equal(body.request.evidence.dataHandlingState, "RAW");
+  assert.equal("payload" in body.request.evidence, false);
+  assert.equal(body.request.observation.kind, "runtime-summary-collected");
+  assert.equal(running.observationStore.listForSession(session.id).length, 1);
+  assert.ok(running.observationStore.listForSession(session.id)[0]!.evidence?.payload);
+  running.revokeSession(session.id);
+  const exitCode = await new Promise<number | null>(resolve => child.once("exit", resolve));
+  assert.equal(exitCode, 0, error);
+  assert.match(output, /Observation requested/);
+  assert.match(output, /Observation completed/);
+  assert.match(output, /no further observation requests/);
+  assert.equal(session.state, "revoked");
 });
 
 test("real .NET Agent connects, heartbeats and closes cleanly", async context => {

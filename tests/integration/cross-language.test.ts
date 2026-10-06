@@ -27,6 +27,16 @@ test("TypeScript output is consumed by C# and C# output is consumed by TypeScrip
     const csharpProduces = runAgent("emit-agent-hello", csharpOutput);
     assert.equal(csharpProduces.status, 0, csharpProduces.stderr);
     assert.equal(validateAgentHello(JSON.parse(await readFile(csharpOutput, "utf8")) as unknown).valid, true);
+
+    const requestId = crypto.randomUUID();
+    const observationRequest = join(directory, "typescript-observation-request.json");
+    await writeFile(observationRequest, JSON.stringify({
+      protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.request",
+      sessionId: crypto.randomUUID(), correlationId: requestId, timestamp: new Date().toISOString(),
+      payload: { requestId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", timeoutMs: 5_000, maxPayloadBytes: 16_384 },
+    }), "utf8");
+    const csharpConsumesObservation = runAgent("validate-contract", "observation-request.schema.json", observationRequest);
+    assert.equal(csharpConsumesObservation.status, 0, csharpConsumesObservation.stderr);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

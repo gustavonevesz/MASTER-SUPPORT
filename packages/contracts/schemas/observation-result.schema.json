@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.master-support.invalid/protocol/1.0/observation-result.schema.json",
+  "title": "ObservationResult",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "messageType", "sessionId", "correlationId", "timestamp", "payload"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "const": "observation.result" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "required": ["requestId", "evidence", "observation"],
+      "properties": {
+        "requestId": { "type": "string", "format": "uuid" },
+        "evidence": {
+          "type": "object",
+          "required": ["evidenceId", "capabilityId", "capabilityVersion", "collectedAt", "source", "dataHandlingState", "payload"],
+          "properties": {
+            "evidenceId": { "type": "string", "format": "uuid" },
+            "capabilityId": { "const": "system.runtime.summary" },
+            "capabilityVersion": { "const": "1.0" },
+            "collectedAt": { "type": "string", "format": "date-time" },
+            "source": { "const": "agent.native-runtime-api" },
+            "dataHandlingState": { "const": "RAW" },
+            "payload": {
+              "type": "object",
+              "required": ["osPlatform", "osDescription", "osArchitecture", "processArchitecture", "dotnetRuntime", "agentVersion", "productVersion", "protocolVersion", "supportSessionMode"],
+              "properties": {
+                "osPlatform": { "type": "string", "minLength": 1 },
+                "osDescription": { "type": "string", "minLength": 1 },
+                "osArchitecture": { "type": "string", "minLength": 1 },
+                "processArchitecture": { "type": "string", "minLength": 1 },
+                "dotnetRuntime": { "type": "string", "minLength": 1 },
+                "agentVersion": { "type": "string", "minLength": 1 },
+                "productVersion": { "type": "string", "minLength": 1 },
+                "protocolVersion": { "const": "1.0" },
+                "supportSessionMode": { "const": "temporary-development" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "observation": {
+          "type": "object",
+          "required": ["observationId", "evidenceId", "observedAt", "kind", "statement", "facts"],
+          "properties": {
+            "observationId": { "type": "string", "format": "uuid" },
+            "evidenceId": { "type": "string", "format": "uuid" },
+            "observedAt": { "type": "string", "format": "date-time" },
+            "kind": { "const": "runtime-summary-collected" },
+            "statement": { "const": "The temporary Agent runtime has the reported platform and architecture properties." },
+            "facts": {
+              "type": "object",
+              "required": ["osPlatform", "osDescription", "osArchitecture", "processArchitecture", "dotnetRuntime", "agentVersion", "productVersion", "protocolVersion", "supportSessionMode"],
+              "properties": {
+                "osPlatform": { "type": "string", "minLength": 1 },
+                "osDescription": { "type": "string", "minLength": 1 },
+                "osArchitecture": { "type": "string", "minLength": 1 },
+                "processArchitecture": { "type": "string", "minLength": 1 },
+                "dotnetRuntime": { "type": "string", "minLength": 1 },
+                "agentVersion": { "type": "string", "minLength": 1 },
+                "productVersion": { "type": "string", "minLength": 1 },
+                "protocolVersion": { "const": "1.0" },
+                "supportSessionMode": { "const": "temporary-development" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

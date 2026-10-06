@@ -22,11 +22,15 @@ Critério de saída: builds reproduzíveis, contrato round-trip e nenhum comando
 
 ## FOUNDATION-002 — Session Backbone
 
-Status: implementada, aguardando gate de revisão. Lifecycle temporário, WebSocket Trial em loopback, handshake, heartbeat/lease, resume efêmero, deduplicação limitada e encerramento/revogação em memória. Apenas desenvolvimento; sem identidade confiável.
+Status: concluída no commit `94b9ca1`. Lifecycle temporário, WebSocket Trial em loopback, handshake, heartbeat/lease, resume efêmero, deduplicação limitada e encerramento/revogação em memória. Apenas desenvolvimento; sem identidade confiável.
 
 ## FOUNDATION-003 — Read-only Observation Backbone
 
-Próxima etapa proposta: uma capability estritamente somente leitura, seu contrato, coleta sintética/segura, Evidence e Observation, sempre com sessão dev-only e sem ação mutável. O escopo depende de gate explícito.
+Status: implementada, aguardando gate de revisão. Inclui revogação proativa do canal, registry fechado no Agent, negociação e execução de `system.runtime.summary@1.0`, lifecycle de solicitação, Evidence RAW e Observation factual distintas, timeout de 5 segundos, limite de 16 KiB, deduplicação operacional e stores somente em memória. Não inclui Job, Preflight, persistência, autenticação de produção ou ação mutável.
+
+## FOUNDATION-004 — Observation Hardening & Reconciliation
+
+Próxima etapa recomendada: consolidar a espinha de observação antes de ampliar coleta — política explícita para cancelamento/resultado tardio, quotas e concorrência, reconciliação após queda, métricas sem RAW e evidência do WebSocket fora do happy path. Continuam fora de escopo ações mutáveis, Job completo, PowerShell e Preflight.
 
 ## VERTICAL-001 — Read-only Preflight
 

@@ -47,6 +47,12 @@ Toda capability deverá declarar se é segura para retry, idempotente, não idem
 
 Há custo inicial para criar handlers e verificadores, compensado por segurança, testes e aprendizado confiável. Casos novos podem exigir escalonamento humano. Success técnico, outcome e resolução permanecem separados.
 
+## Concretização read-only na FOUNDATION-003
+
+A primeira execução real é deliberadamente uma `ObservationRequest`, não Job/CommandExecution: `system.runtime.summary@1.0` apenas coleta dados por APIs nativas do runtime. O Agent usa registry explícita com ID, versão, R0, `ReadOnly`, `RequiresAdmin=false` e referência direta ao handler; não aceita nome de método, tipo, assembly, comando ou script do Server. Evidence RAW e Observation factual são resultados distintos.
+
+Essa forma não cria um orquestrador paralelo. Um Job futuro poderá selecionar uma Capability para realizar uma Action sob policy/approval, reutilizando catálogo, negociação, limites e dispatch local. Evidence/Observation continuarão representando conhecimento produzido, enquanto Job/CommandExecution representarão intenção/tentativa quando existirem.
+
 ## Risco de lock-in
 
 Moderado no catálogo próprio. Mitigar com schemas neutros, capabilities pequenas orientadas à intenção e adapters por plataforma; evitar DSL proprietária abrangente.

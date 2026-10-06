@@ -26,6 +26,9 @@ try {
     Write-Host '== TypeScript dependencies =='
     Invoke-Checked npm ci
 
+    Write-Host '== Dependency audit =='
+    Invoke-Checked npm audit
+
     Write-Host '== .NET restore/build/tests =='
     Invoke-Checked dotnet restore apps/agent/test/MasterSupport.Agent.Tests.csproj
     Invoke-Checked dotnet build apps/agent/src/MasterSupport.Agent.csproj --no-restore --configuration Debug
@@ -37,7 +40,7 @@ try {
     Write-Host '== Repository checks =='
     Invoke-Checked git diff --check
 
-    Write-Host 'FOUNDATION-002 verification succeeded.'
+    Write-Host 'FOUNDATION-003 verification succeeded.'
 }
 finally {
     Pop-Location

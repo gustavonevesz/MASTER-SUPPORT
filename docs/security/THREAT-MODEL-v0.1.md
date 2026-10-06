@@ -37,6 +37,13 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 | T-021 | Endpoint WebSocket dev-only exposto fora de loopback permite sessões não autenticadas (S/E) | crítico | loopback por padrão, override explícito com alerta, sem `/dev/sessions` fora de loopback; proibir uso produtivo |
 | T-022 | Resume token dev-only capturado retoma autoridade ainda válida (S) | alto | 256 bits aleatórios, memória apenas, comparação constante, vínculo a Session+AgentInstance, TTL e nunca logar |
 | T-023 | IDs duplicados ou cache sem limite causam replay/DoS (T/D) | alto | deduplicação por sessão com capacidade limitada; sem promessa exactly-once |
+| T-024 | Servidor comprometido solicita capability read-only abusivamente (T/D) | alto | catálogo negociado, registry local R0/ReadOnly, timeout/tamanho, Session ativa; quotas/concurrency ainda pendentes |
+| T-025 | Registry/handler local adulterado falsifica descriptor ou amplia efeito (T/E) | crítico | mapeamento explícito sem reflection/string executável, testes de descriptor, integridade/assinatura do Agent futura |
+| T-026 | Evidence maliciosa explora consumidor ou vira instrução (T/I) | alto | schema estrito, tratar payload como RAW não confiável, sem IA e sem interpolação em executor |
+| T-027 | Resultado excessivo ou repetição de request esgota recursos (D) | alto | limite próprio de 16 KiB, timeout de 5 s, cache de requestId limitado e sem streaming; quotas futuras |
+| T-028 | Spoofing de capability/versão contorna negociação (S/T) | alto | interseção exata ID+versão no handshake e validação local da registry antes do handler |
+| T-029 | Replay do mesmo `requestId` executa handler novamente (T/D) | médio | resultado/falha final em cache limitado; duplicata concluída não reexecuta e duplicata em curso falha deterministicamente |
+| T-030 | Evidence RAW vaza por log ou endpoint de desenvolvimento (I) | alto | logging por metadados, consulta omite payload, teste com marcador RAW e endpoints somente loopback |
 
 ## Cenários de abuso prioritários
 
@@ -45,6 +52,7 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 3. Endpoint retorna texto “ignore policy”: conteúdo permanece Evidence não confiável e não alcança executor/policy como instrução.
 4. Sessão fecha durante Job: nenhum novo lease; ação em curso segue regra explícita de cancelamento seguro e resultado tardio é marcado.
 5. Conexão cai sem `SessionClose`: estado vira `Disconnected`, mantém somente a janela do lease e depois expira; não é registrado como fechamento limpo.
+6. Server revoga enquanto poderia despachar coleta: estado terminal é aplicado antes de fechar o socket; registry remove o canal e novos requests são rejeitados.
 
 ## Riscos residuais e validações futuras
 

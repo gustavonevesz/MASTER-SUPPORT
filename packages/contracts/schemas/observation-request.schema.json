@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.master-support.invalid/protocol/1.0/observation-request.schema.json",
+  "title": "ObservationRequest",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "messageType", "sessionId", "correlationId", "timestamp", "payload"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "const": "observation.request" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "required": ["requestId", "capabilityId", "capabilityVersion", "timeoutMs", "maxPayloadBytes"],
+      "properties": {
+        "requestId": { "type": "string", "format": "uuid" },
+        "capabilityId": { "type": "string", "minLength": 1 },
+        "capabilityVersion": { "type": "string", "minLength": 1 },
+        "timeoutMs": { "type": "integer" },
+        "maxPayloadBytes": { "type": "integer" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

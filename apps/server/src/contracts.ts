@@ -57,11 +57,15 @@ async function loadValidator(fileName: string): Promise<ValidateFunction> {
 
 const agentHelloValidator = await loadValidator("agent-hello.schema.json");
 const serverHelloValidator = await loadValidator("server-hello.schema.json");
+const observationRequestValidator = await loadValidator("observation-request.schema.json");
 
 const sessionValidators = new Map<string, ValidateFunction>([
   ["heartbeat", await loadValidator("heartbeat.schema.json")],
   ["session.close", await loadValidator("session-close.schema.json")],
   ["session.resume.request", await loadValidator("session-resume-request.schema.json")],
+  ["observation.accepted", await loadValidator("observation-accepted.schema.json")],
+  ["observation.result", await loadValidator("observation-result.schema.json")],
+  ["observation.failed", await loadValidator("observation-failed.schema.json")],
 ]);
 
 function validate<T>(validator: ValidateFunction, value: unknown): ValidationResult<T> {
@@ -83,6 +87,10 @@ export function validateSessionMessage(messageType: string, value: unknown): Val
   return validator
     ? validate<Record<string, unknown>>(validator, value)
     : { valid: false, errors: [] };
+}
+
+export function validateObservationRequest(value: unknown): ValidationResult<Record<string, unknown>> {
+  return validate<Record<string, unknown>>(observationRequestValidator, value);
 }
 
 export async function readJson(path: string): Promise<unknown> {

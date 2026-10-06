@@ -25,6 +25,8 @@ Status: conceitual. Cardinalidades, campos e agregados serão validados por caso
 | RiskLevel | Classificação conceitual R0–R4; não é autorização por si só. | provisório |
 | AuditEvent | Evento append-only de segurança/operação com ator, ação, alvo, correlação, tempo e resultado. | núcleo |
 
+Na FOUNDATION-003, `ObservationRequest` é um caso de uso operacional transitório, não um Job nem uma entidade persistida. Ele referencia Session e Capability negociada, possui `requestId` e lifecycle `Created/Accepted/Executing/Result|Failure|Timeout`. Evidence e Observation resultantes são guardadas somente em memória; reinício perde todo esse estado por desenho.
+
 ## Relações principais
 
 ```mermaid
@@ -57,6 +59,7 @@ erDiagram
 - **Job ≠ Execution:** um Job pode ter tentativas; cada tentativa é uma CommandExecution.
 - **Execution result ≠ Verification ≠ Resolution.**
 - **Evidence ≠ Observation:** evidência é o artefato/dado; observação é a afirmação sustentada.
+- **ObservationRequest ≠ Job:** a primeira coordena coleta R0 read-only; um Job futuro poderá orquestrar Capability para uma Action, sem fundir conhecimento produzido com execução.
 - **Asset ≠ Endpoint observado ≠ AgentInstance ≠ Session:** um agente temporário pode abrir nova Session para o mesmo Asset; um endpoint observado pode permanecer não confirmado e não deve receber identidade confiável automaticamente.
 
 ## Invariantes

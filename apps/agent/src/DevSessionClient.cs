@@ -7,7 +7,12 @@ public sealed class DevSessionClient
 {
     private readonly ContractService _contracts = new();
     private readonly IAgentTransport _transport;
-    public DevSessionClient(IAgentTransport transport) => _transport = transport;
+    private readonly ObservationProcessor _observations;
+    public DevSessionClient(IAgentTransport transport, ObservationProcessor? observations = null)
+    {
+        _transport = transport;
+        _observations = observations ?? new ObservationProcessor();
+    }
 
     public async Task<int> RunAsync(Uri uri, int? heartbeatLimit, CancellationToken cancellationToken)
     {
@@ -21,26 +26,59 @@ public sealed class DevSessionClient
         var root = serverHello.RootElement;
         var sessionId = root.GetProperty("sessionId").GetGuid();
         var interval = root.GetProperty("payload").GetProperty("heartbeatIntervalSeconds").GetInt32();
+        var negotiatedCapabilities = root.GetProperty("payload").GetProperty("negotiatedCapabilities").EnumerateArray()
+            .Select(item => $"{item.GetProperty("id").GetString()}@{item.GetProperty("version").GetString()}")
+            .ToHashSet(StringComparer.Ordinal);
         Console.WriteLine("Protocol: 1.0");
         Console.WriteLine($"Session: {sessionId:D}");
 
         var completed = 0;
+        var pendingHeartbeats = new HashSet<Guid>();
+        Task<string?> receive = _transport.ReceiveAsync(cancellationToken);
+        var nextHeartbeat = Task.Delay(TimeSpan.FromSeconds(interval), cancellationToken);
         while (!cancellationToken.IsCancellationRequested && (heartbeatLimit is null || completed < heartbeatLimit))
         {
-            try { await Task.Delay(TimeSpan.FromSeconds(interval), cancellationToken); }
+            Task finished;
+            try { finished = await Task.WhenAny(receive, nextHeartbeat); }
             catch (OperationCanceledException) { break; }
-            var messageId = Guid.NewGuid();
-            await _transport.SendAsync(JsonSerializer.Serialize(new
+            if (finished == nextHeartbeat)
             {
-                protocolVersion = "1.0", messageId, messageType = "heartbeat", sessionId,
-                timestamp = DateTimeOffset.UtcNow, payload = new { },
-            }, ContractService.SerializerOptions), cancellationToken);
-            var ackJson = await _transport.ReceiveAsync(cancellationToken) ?? throw new IOException("Server closed before HeartbeatAck.");
-            EnsureValid(ackJson, "heartbeat-ack.schema.json");
-            using var ack = JsonDocument.Parse(ackJson);
-            if (ack.RootElement.GetProperty("correlationId").GetGuid() != messageId) throw new InvalidDataException("HeartbeatAck correlation mismatch.");
-            completed++;
-            Console.WriteLine("Heartbeat OK");
+                var messageId = Guid.NewGuid();
+                pendingHeartbeats.Add(messageId);
+                await _transport.SendAsync(JsonSerializer.Serialize(new
+                {
+                    protocolVersion = "1.0", messageId, messageType = "heartbeat", sessionId,
+                    timestamp = DateTimeOffset.UtcNow, payload = new { },
+                }, ContractService.SerializerOptions), cancellationToken);
+                nextHeartbeat = Task.Delay(TimeSpan.FromSeconds(interval), cancellationToken);
+                continue;
+            }
+
+            var incoming = await receive;
+            if (incoming is null)
+            {
+                Console.WriteLine("Session ended by server; no further observation requests will be accepted.");
+                return 0;
+            }
+            receive = _transport.ReceiveAsync(cancellationToken);
+            using var message = JsonDocument.Parse(incoming);
+            var messageType = message.RootElement.GetProperty("messageType").GetString();
+            if (messageType == "heartbeat.ack")
+            {
+                EnsureValid(incoming, "heartbeat-ack.schema.json");
+                var correlationId = message.RootElement.GetProperty("correlationId").GetGuid();
+                if (!pendingHeartbeats.Remove(correlationId)) throw new InvalidDataException("HeartbeatAck correlation mismatch.");
+                completed++;
+                Console.WriteLine("Heartbeat OK");
+            }
+            else if (messageType == "observation.request")
+            {
+                await _observations.HandleAsync(incoming, sessionId, negotiatedCapabilities, _transport, cancellationToken);
+            }
+            else if (messageType == "protocol.error")
+            {
+                throw new InvalidDataException("Server rejected the active session message.");
+            }
         }
 
         Console.WriteLine("Closing...");
@@ -50,7 +88,7 @@ public sealed class DevSessionClient
             protocolVersion = "1.0", messageId = closeId, messageType = "session.close", sessionId,
             timestamp = DateTimeOffset.UtcNow, payload = new { },
         }, ContractService.SerializerOptions), CancellationToken.None);
-        var closedJson = await _transport.ReceiveAsync(CancellationToken.None) ?? throw new IOException("Server closed before SessionClosed.");
+        var closedJson = await receive ?? throw new IOException("Server closed before SessionClosed.");
         EnsureValid(closedJson, "session-closed.schema.json");
         await _transport.CloseAsync(CancellationToken.None);
         return 0;

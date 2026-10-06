@@ -29,6 +29,7 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 | Conteúdo e metadados de e-mail | altamente sensíveis; não coletar por padrão; conteúdo exige caso, autoridade e controles específicos |
 | Dados pessoais | minimizar, registrar finalidade, restringir acesso e aplicar decisões organizacionais/LGPD futuras |
 | Dados internos da Master Health | classificar conforme política corporativa ainda a definir; deny by default para exportação e IA |
+| `system.runtime.summary` | Evidence `RAW` mesmo contendo somente plataforma/runtime; store efêmero em memória, máximo 16 KiB, sem IA e sem payload em logs/consulta sanitizada |
 
 ## Regras iniciais
 
@@ -39,6 +40,7 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 5. Limites de tamanho, tempo de retenção, criptografia, acesso e descarte serão definidos por categoria.
 6. Conteúdo do endpoint é dado não confiável também contra prompt injection; AI-SAFE exige sanitização semântica além de mascaramento de segredos.
 7. AuditEvent deve preferir metadados e referências; append-only não justifica registrar segredo.
+8. Logs de Observation usam somente `sessionId`, `requestId`, capability, estado, duração, IDs e `payloadSize`; o conteúdo RAW permanece separado.
 
 ## Decisões organizacionais pendentes
 

@@ -6,13 +6,21 @@ import { createServerHello } from "../messages.js";
 import type { Clock } from "../session/clock.js";
 import type { SessionService } from "../session/service.js";
 import type { MessageTransport } from "../transport/message-transport.js";
+import type { ActiveConnectionRegistry } from "./connection-registry.js";
+import type { ObservationService } from "../observation/service.js";
 
 type IncomingEnvelope = { protocolVersion?: unknown; messageId?: unknown; messageType?: unknown; sessionId?: unknown; payload?: unknown };
 
 export class RealtimeSessionController {
   private sessionId: string | undefined;
   private endedCleanly = false;
-  public constructor(private readonly transport: MessageTransport, private readonly sessions: SessionService, private readonly clock: Clock) {}
+  public constructor(
+    private readonly transport: MessageTransport,
+    private readonly sessions: SessionService,
+    private readonly clock: Clock,
+    private readonly connections: ActiveConnectionRegistry,
+    private readonly observations: ObservationService,
+  ) {}
   public start(): void {
     logEvent("info", "agent_connection_opened");
     this.transport.onMessage(message => this.receive(message));
@@ -34,6 +42,7 @@ export class RealtimeSessionController {
     if (raw.sessionId !== this.sessionId) { this.reject("session_not_active", "Session does not match this connection.", raw.messageId); return; }
     if (raw.messageType === "heartbeat") this.handleHeartbeat(raw);
     else if (raw.messageType === "session.close") this.handleClose(raw);
+    else if (raw.messageType.startsWith("observation.")) this.observations.handle(raw.messageType, raw);
     else this.reject("invalid_message", "Unsupported session message.", raw.messageId);
   }
   private handleHello(raw: IncomingEnvelope): void {
@@ -50,6 +59,7 @@ export class RealtimeSessionController {
     logEvent("info", "agent_hello_received", { messageId: hello.messageId });
     const session = this.sessions.create(hello);
     this.sessionId = session.id;
+    this.connections.register(session.id, this.transport);
     logEvent("info", "session_created", { sessionId: session.id, agentInstanceId: session.agentInstanceId });
     this.transport.send(createServerHello(hello, session, this.sessions.options.heartbeatIntervalMs / 1000));
   }
@@ -60,6 +70,7 @@ export class RealtimeSessionController {
     const session = this.sessions.resume(String(raw.sessionId), payload.agentInstanceId, payload.resumeToken);
     if (!session) { this.reject("resume_rejected", "Session cannot be resumed.", raw.messageId); return; }
     this.sessionId = session.id;
+    this.connections.register(session.id, this.transport);
     logEvent("info", "session_resumed", { sessionId: session.id, agentInstanceId: session.agentInstanceId });
     this.transport.send({ protocolVersion: "1.0", messageId: randomUUID(), messageType: "session.resume.result", sessionId: session.id,
       correlationId: raw.messageId, timestamp: this.clock.now().toISOString(), expiresAt: session.expiresAt.toISOString(),
@@ -84,6 +95,7 @@ export class RealtimeSessionController {
     } catch { this.reject("session_not_active", "Session is not active.", raw.messageId); }
   }
   private disconnected(): void {
+    if (this.sessionId) this.connections.unregister(this.sessionId, this.transport);
     if (!this.endedCleanly && this.sessionId) {
       const session = this.sessions.disconnect(this.sessionId);
       if (session) logEvent("info", "session_disconnected", { sessionId: session.id });

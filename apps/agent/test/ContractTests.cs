@@ -27,12 +27,14 @@ public sealed class ContractTests
     }
 
     [TestMethod]
-    public void GeneratedHelloUsesTemporaryInstanceIdentityAndNoCapabilities()
+    public void GeneratedHelloUsesTemporaryInstanceIdentityAndAnnouncesOnlyRuntimeSummary()
     {
         var first = AgentHelloFactory.Create();
         var second = AgentHelloFactory.Create();
         Assert.AreNotEqual(first.Payload.AgentInstanceId, second.Payload.AgentInstanceId);
-        Assert.IsEmpty(first.Payload.SupportedCapabilities);
+        Assert.HasCount(1, first.Payload.SupportedCapabilities);
+        Assert.AreEqual("system.runtime.summary", first.Payload.SupportedCapabilities[0].Id);
+        Assert.AreEqual("1.0", first.Payload.SupportedCapabilities[0].Version);
         Assert.IsEmpty(_contracts.ValidateAgentHello(_contracts.SerializeAgentHello(first)));
     }
 

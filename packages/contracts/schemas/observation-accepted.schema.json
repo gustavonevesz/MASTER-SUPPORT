@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.master-support.invalid/protocol/1.0/observation-accepted.schema.json",
+  "title": "ObservationAccepted",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "messageType", "sessionId", "correlationId", "timestamp", "payload"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "const": "observation.accepted" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "required": ["requestId"],
+      "properties": { "requestId": { "type": "string", "format": "uuid" } },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

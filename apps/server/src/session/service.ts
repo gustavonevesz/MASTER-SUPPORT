@@ -55,7 +55,8 @@ export class SessionService {
 
   public disconnect(sessionId: string): Session | undefined {
     const session = this.store.get(sessionId);
-    if (session?.state === "active") session.state = "disconnected";
+    if (session?.state !== "active") return undefined;
+    session.state = "disconnected";
     return session;
   }
 
