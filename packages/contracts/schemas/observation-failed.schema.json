@@ -16,7 +16,7 @@
       "required": ["requestId", "code", "message"],
       "properties": {
         "requestId": { "type": "string", "format": "uuid" },
-        "code": { "enum": ["invalid_session", "unknown_capability", "duplicate_request", "timeout", "payload_too_large", "handler_failed"] },
+        "code": { "enum": ["invalid_session", "unknown_capability", "duplicate_request", "deadline_expired", "concurrency_limit", "cancelled", "timeout", "payload_too_large", "backpressure", "handler_failed"] },
         "message": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false

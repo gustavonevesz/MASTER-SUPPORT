@@ -86,6 +86,7 @@ export class RealtimeSessionController {
   }
   private handleClose(raw: IncomingEnvelope): void {
     try {
+      this.observations.authorityLost(this.sessionId!, "session_closed");
       const session = this.sessions.close(this.sessionId!);
       this.endedCleanly = true;
       logEvent("info", "session_closed", { sessionId: session.id });
@@ -98,10 +99,11 @@ export class RealtimeSessionController {
     if (this.sessionId) this.connections.unregister(this.sessionId, this.transport);
     if (!this.endedCleanly && this.sessionId) {
       const session = this.sessions.disconnect(this.sessionId);
-      if (session) logEvent("info", "session_disconnected", { sessionId: session.id });
+      if (session) { this.observations.authorityLost(session.id, "disconnected"); logEvent("info", "session_disconnected", { sessionId: session.id }); }
     }
   }
   private reject(code: string, message: string, correlationId?: unknown): void {
+    this.observations.metrics.increment("messages_rejected");
     logEvent("error", "protocol_message_rejected", typeof correlationId === "string" ? { correlationId } : {});
     this.transport.send({ protocolVersion: "1.0", messageId: randomUUID(), messageType: "protocol.error",
       ...(typeof correlationId === "string" ? { correlationId } : {}), timestamp: this.clock.now().toISOString(), payload: { code, message } });

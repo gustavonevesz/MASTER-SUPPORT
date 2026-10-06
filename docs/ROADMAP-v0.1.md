@@ -26,11 +26,15 @@ Status: concluída no commit `94b9ca1`. Lifecycle temporário, WebSocket Trial e
 
 ## FOUNDATION-003 — Read-only Observation Backbone
 
-Status: implementada, aguardando gate de revisão. Inclui revogação proativa do canal, registry fechado no Agent, negociação e execução de `system.runtime.summary@1.0`, lifecycle de solicitação, Evidence RAW e Observation factual distintas, timeout de 5 segundos, limite de 16 KiB, deduplicação operacional e stores somente em memória. Não inclui Job, Preflight, persistência, autenticação de produção ou ação mutável.
+Status: concluída no commit `e545199`. Inclui revogação proativa do canal, registry fechado no Agent, negociação e execução de `system.runtime.summary@1.0`, lifecycle de solicitação, Evidence RAW e Observation factual distintas, timeout de 5 segundos, limite de 16 KiB, deduplicação operacional e stores somente em memória. Não inclui Job, Preflight, persistência, autenticação de produção ou ação mutável.
 
 ## FOUNDATION-004 — Observation Hardening & Reconciliation
 
-Próxima etapa recomendada: consolidar a espinha de observação antes de ampliar coleta — política explícita para cancelamento/resultado tardio, quotas e concorrência, reconciliação após queda, métricas sem RAW e evidência do WebSocket fora do happy path. Continuam fora de escopo ações mutáveis, Job completo, PowerShell e Preflight.
+Status: implementada, aguardando gate de revisão. Consolidou a espinha de observação com cancelamento por autoridade, registry ativo limitado, estados terminais imutáveis, resultado tardio sem RAW, outcome desconhecido após queda, deadline, quotas, rate limit, backpressure, métricas/auditoria sanitizadas e spike de proxy local. WebSocket permanece Trial e todo estado continua volátil.
+
+## FOUNDATION-005 — Durable Observation State & Restart Reconciliation
+
+Próxima etapa recomendada: persistir de forma transacional o mínimo de Session/Observation/Audit, definir migrations e retenção, e reconciliar restart sem reenviar automaticamente requests cujo outcome seja desconhecido. Deve provar crash/restart e idempotência entre store e transporte, sem nova capability, PowerShell, ação mutável, Job completo, Preflight, IA ou UI.
 
 ## VERTICAL-001 — Read-only Preflight
 

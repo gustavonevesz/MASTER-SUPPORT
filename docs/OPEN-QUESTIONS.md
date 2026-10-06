@@ -19,6 +19,8 @@ Estas questões podem alterar segurança, protocolo ou modelo; não devem ser re
 | OQ-013 | Qual será a estratégia de atualização, assinatura e revogação do Runtime antes de qualquer modo persistente? | supply chain | antes de Managed Endpoint |
 | OQ-014 | Qual conjunto de dados pode chegar a um LLM e qual serviço fará minimização/redaction? | secrets/prompt injection | antes de IA |
 | OQ-015 | Qual biblioteca JSON Schema C# madura substituirá o validador mínimo quando surgir `$ref`, composição, condicional ou formato customizado? | evitar interpretação parcial/divergente | obrigatoriamente antes da primeira keyword fora do subconjunto ADR-007 |
-| OQ-016 | Como reconciliar Observation aceita/em execução quando o canal cai ou a Session é revogada, incluindo resultado tardio? | evitar estado falso e reexecução acidental | FOUNDATION-004 |
-| OQ-017 | Quais quotas de concorrência e frequência devem limitar solicitações R0 por Session e Agent? | servidor abusivo e resource exhaustion | FOUNDATION-004 |
+| OQ-016 | Resolvida na ADR-010: disconnect abandona requests aceitas/em execução com outcome desconhecido; terminais não reabrem e resume não reexecuta. | evita estado falso e reexecução acidental | FOUNDATION-004 |
+| OQ-017 | Resolvida para o runtime único: 2 ativas por Session/Agent, 1 por capability e 5 disparos por Session/capability em 10 s, todos configuráveis. Limites distribuídos continuam pendentes. | servidor abusivo e resource exhaustion | FOUNDATION-004 |
 | OQ-018 | Qual parte de uma Observation factual pode ser exposta além do endpoint dev-only sem revelar Evidence RAW? | minimização, acesso e futura UI | antes de qualquer UI/persistência |
+| OQ-019 | Como persistir e reconciliar atomicamente Session, Observation e Audit após crash sem transformar outcome desconhecido em reexecução? | consistência, replay e recuperação | FOUNDATION-005 |
+| OQ-020 | Qual tolerância de clock e fonte de tempo serão exigidas fora do ambiente local? | deadline e rejeição tardia entre hosts | antes do piloto |

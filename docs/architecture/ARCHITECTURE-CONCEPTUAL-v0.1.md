@@ -77,7 +77,7 @@ Os nomes de campos ainda não estão congelados, mas toda mensagem Agent ↔ Con
 
 No handshake, o agente informa conceitos equivalentes a versão do agente, versões de protocolo compreendidas e capabilities suportadas com suas versões. O servidor seleciona somente uma combinação compatível, pode rejeitar o agente e jamais envia Job para capability não negociada. A evolução deve favorecer mudanças aditivas e uma janela de compatibilidade, sem exigir atualização simultânea de todos os participantes. O mecanismo exato de negociação será definido por contrato na FOUNDATION-001.
 
-WebSocket é o adapter Trial da FOUNDATION-002, conforme ADR-009. Essas semânticas não dependem dele e sua promoção ainda exige evidência fora de loopback.
+WebSocket é o adapter Trial da FOUNDATION-002, conforme ADR-009. O proxy local da FOUNDATION-004 prova upgrade, heartbeat, queda, fechamento e limites em um harness controlado, mas não substitui evidência de proxy corporativo, TLS ou rede real.
 
 ## Backbone temporário implementado
 
@@ -100,13 +100,17 @@ Deduplicação é at-most-once apenas para processamento semântico dentro da ja
 
 ## Backbone de observação read-only implementado
 
-Na FOUNDATION-003, `AgentHello` oferece `system.runtime.summary@1.0` e a Session guarda apenas a interseção com o catálogo do Server. Uma registry explícita no Agent associa ID/versão a descriptor R0, `ReadOnly`, `RequiresAdmin=false` e handler C# concreto; texto executável, reflection e seleção de tipo/método não atravessam o protocolo.
+`AgentHello` oferece somente `system.runtime.summary@1.0` e a Session guarda apenas a interseção com o catálogo do Server. Uma registry explícita no Agent associa ID/versão a descriptor R0, `ReadOnly`, `RequiresAdmin=false` e handler C# concreto; texto executável, reflection e seleção de tipo/método não atravessam o protocolo.
 
-O Server cria `ObservationRequest` somente para Session `Active` e capability negociada. `requestId` identifica a operação e permanece distinto dos `messageId`; `correlationId=requestId` reúne request, aceite e desfecho. O lifecycle em memória é `Created → Accepted → Executing → Result|Failure|Timeout`. O Agent aplica timeout/cancelamento, 16 KiB e deduplicação operacional limitada; repetição concluída devolve a resposta em cache sem executar novamente.
+O Server cria `ObservationRequest` somente para Session `Active` e capability negociada. `requestId` identifica a operação e permanece distinto dos `messageId`; `correlationId=requestId` reúne request, aceite e desfecho. O lifecycle em memória é `created → accepted → executing → completed|failed|timed_out|cancelled|abandoned`; terminais não reabrem. `outcomeUnknown=true` qualifica abandono quando execução e entrega podem ter cruzado uma queda.
+
+Antes de aceitar um desfecho, a camada de Reconciliation valida request, Session ativa, correlação, capability, estado e deadline e decide `accept`, `reject`, `late` ou `duplicate`. Resultado recebido não é resultado aceito. Reconciliation determina pertencimento e autoridade; Verification futura determina se o objetivo real foi atingido.
+
+O Agent mantém registry bounded das operações ativas e cache bounded dos desfechos, aplica timeout/cancelamento/deadline, 16 KiB e deduplicação. Revogação, close e expiração cancelam autoridade. Disconnect cancela imediatamente o trabalho local; o Server abandona requests aceitas/em execução com outcome desconhecido. Resume não as reenvia. Resultados tardios preservam somente metadados sanitizados, sem Evidence RAW.
 
 Evidence contém o payload coletado e sua procedência como `RAW`; Observation contém a afirmação factual determinística sustentada por aquela Evidence. Logs carregam apenas IDs, estado, duração e tamanho. A consulta dev-only omite o payload RAW. Um futuro Job poderá orquestrar uma Capability em nome de Action/policy, mas não substitui Evidence/Observation e não foi criado nesta etapa.
 
-Revogação agora muda a Session para `Revoked` e fecha imediatamente a conexão registrada. O callback de desconexão não rebaixa o estado terminal, resume falha e nenhum novo request é despachado.
+Os limites default, configuráveis, são 2 requests ativas por Session e Agent, 1 por capability e 5 inícios por Session/capability em 10 segundos. Não há fila ilimitada. O transporte limita mensagem a 64 KiB e buffers de saída são bounded; pressão excessiva fecha o canal explicitamente. Métricas e AuditEvents em memória registram apenas metadados.
 
 ## Estados mínimos
 

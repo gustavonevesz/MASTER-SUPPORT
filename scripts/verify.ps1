@@ -40,7 +40,7 @@ try {
     Write-Host '== Repository checks =='
     Invoke-Checked git diff --check
 
-    Write-Host 'FOUNDATION-003 verification succeeded.'
+    Write-Host 'FOUNDATION-004 verification succeeded.'
 }
 finally {
     Pop-Location

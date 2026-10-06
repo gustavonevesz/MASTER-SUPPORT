@@ -33,10 +33,18 @@ test("TypeScript output is consumed by C# and C# output is consumed by TypeScrip
     await writeFile(observationRequest, JSON.stringify({
       protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.request",
       sessionId: crypto.randomUUID(), correlationId: requestId, timestamp: new Date().toISOString(),
-      payload: { requestId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", timeoutMs: 5_000, maxPayloadBytes: 16_384 },
+      payload: { requestId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", timeoutMs: 5_000,
+        maxPayloadBytes: 16_384, deadline: new Date(Date.now() + 5_000).toISOString() },
     }), "utf8");
     const csharpConsumesObservation = runAgent("validate-contract", "observation-request.schema.json", observationRequest);
     assert.equal(csharpConsumesObservation.status, 0, csharpConsumesObservation.stderr);
+
+    const cancelPath = join(directory, "typescript-observation-cancel.json");
+    await writeFile(cancelPath, JSON.stringify({ protocolVersion: "1.0", messageId: crypto.randomUUID(),
+      messageType: "observation.cancel", sessionId: crypto.randomUUID(), correlationId: requestId,
+      timestamp: new Date().toISOString(), payload: { requestId, reason: "requested" } }), "utf8");
+    const csharpConsumesCancel = runAgent("validate-contract", "observation-cancel.schema.json", cancelPath);
+    assert.equal(csharpConsumesCancel.status, 0, csharpConsumesCancel.stderr);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

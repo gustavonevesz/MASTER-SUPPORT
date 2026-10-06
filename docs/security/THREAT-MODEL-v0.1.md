@@ -37,13 +37,18 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 | T-021 | Endpoint WebSocket dev-only exposto fora de loopback permite sessões não autenticadas (S/E) | crítico | loopback por padrão, override explícito com alerta, sem `/dev/sessions` fora de loopback; proibir uso produtivo |
 | T-022 | Resume token dev-only capturado retoma autoridade ainda válida (S) | alto | 256 bits aleatórios, memória apenas, comparação constante, vínculo a Session+AgentInstance, TTL e nunca logar |
 | T-023 | IDs duplicados ou cache sem limite causam replay/DoS (T/D) | alto | deduplicação por sessão com capacidade limitada; sem promessa exactly-once |
-| T-024 | Servidor comprometido solicita capability read-only abusivamente (T/D) | alto | catálogo negociado, registry local R0/ReadOnly, timeout/tamanho, Session ativa; quotas/concurrency ainda pendentes |
+| T-024 | Servidor comprometido solicita capability read-only abusivamente (T/D) | alto | catálogo negociado, registry local R0/ReadOnly, timeout/tamanho, Session ativa, quotas por Session/Agent/capability e rate limit |
 | T-025 | Registry/handler local adulterado falsifica descriptor ou amplia efeito (T/E) | crítico | mapeamento explícito sem reflection/string executável, testes de descriptor, integridade/assinatura do Agent futura |
 | T-026 | Evidence maliciosa explora consumidor ou vira instrução (T/I) | alto | schema estrito, tratar payload como RAW não confiável, sem IA e sem interpolação em executor |
 | T-027 | Resultado excessivo ou repetição de request esgota recursos (D) | alto | limite próprio de 16 KiB, timeout de 5 s, cache de requestId limitado e sem streaming; quotas futuras |
 | T-028 | Spoofing de capability/versão contorna negociação (S/T) | alto | interseção exata ID+versão no handshake e validação local da registry antes do handler |
 | T-029 | Replay do mesmo `requestId` executa handler novamente (T/D) | médio | resultado/falha final em cache limitado; duplicata concluída não reexecuta e duplicata em curso falha deterministicamente |
 | T-030 | Evidence RAW vaza por log ou endpoint de desenvolvimento (I) | alto | logging por metadados, consulta omite payload, teste com marcador RAW e endpoints somente loopback |
+| T-031 | Resultado tardio/replay tenta reabrir terminal ou anexar Evidence após revogação (T/R) | alto | reconciliation antes de aceite, terminais imutáveis, metadado tardio sem RAW e nenhuma reexecução automática |
+| T-032 | Flood ou starvation de capability monopoliza Session/Agent (D) | alto | limites configuráveis por Session/Agent/capability, janela deslizante e erro estruturado sem fila ilimitada |
+| T-033 | Consumidor lento esgota fila/buffer de saída (D) | alto | limite bounded de 64 KiB no Server, máximo de quatro sends pendentes no Agent e fechamento explícito em backpressure |
+| T-034 | Corrida de cancelamento aceita resultado sem autoridade (T/R) | alto | transição terminal atômica no store local, cancelamento idempotente e reconciliação de estado/deadline |
+| T-035 | Payload oversized ou correlation/capability spoofing contorna associação da request (T/D) | alto | limites antes de armazenamento, schemas, correlação exata, capability ID+versão negociada e rejeição auditada |
 
 ## Cenários de abuso prioritários
 

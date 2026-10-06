@@ -148,12 +148,14 @@ test("real .NET Agent executes the one read-only observation and stops after rev
   await waitUntil(() => running.store.list()[0]?.capabilities.some(item => item.id === "system.runtime.summary") === true);
   const session = running.store.list()[0]!;
   const response = await running.app.inject({ method: "POST", url: `/dev/sessions/${session.id}/observations`, payload: { capabilityId: "system.runtime.summary" } });
-  assert.equal(response.statusCode, 200, response.body);
-  const body = response.json();
-  assert.equal(body.request.state, "result");
-  assert.equal(body.request.evidence.dataHandlingState, "RAW");
-  assert.equal("payload" in body.request.evidence, false);
-  assert.equal(body.request.observation.kind, "runtime-summary-collected");
+  assert.equal(response.statusCode, 202, response.body);
+  await waitUntil(() => running.observationStore.listForSession(session.id)[0]?.state === "completed");
+  const query = await running.app.inject({ method: "GET", url: `/dev/sessions/${session.id}/observations` });
+  const body = query.json().observations[0];
+  assert.equal(body.state, "completed");
+  assert.equal(body.evidence.dataHandlingState, "RAW");
+  assert.equal("payload" in body.evidence, false);
+  assert.equal(body.observation.kind, "runtime-summary-collected");
   assert.equal(running.observationStore.listForSession(session.id).length, 1);
   assert.ok(running.observationStore.listForSession(session.id)[0]!.evidence?.payload);
   running.revokeSession(session.id);
@@ -163,6 +165,53 @@ test("real .NET Agent executes the one read-only observation and stops after rev
   assert.match(output, /Observation completed/);
   assert.match(output, /no further observation requests/);
   assert.equal(session.state, "revoked");
+});
+
+test("explicit cancel travels over WebSocket and is idempotent", async context => {
+  const running = await server({ leaseDurationMs: 10_000, heartbeatIntervalMs: 1_000 });
+  context.after(() => running.app.close());
+  const socket = await connect(running.url); const base = createAgentHello();
+  socket.send(JSON.stringify({ ...base, payload: { ...base.payload, supportedCapabilities: [{ id: "system.runtime.summary", version: "1.0" }] } }));
+  const hello = await receive(socket); const sessionId = String(hello.sessionId);
+  const started = await running.app.inject({ method: "POST", url: `/dev/sessions/${sessionId}/observations`, payload: { capabilityId: "system.runtime.summary" } });
+  assert.equal(started.statusCode, 202); const request = await receive(socket); const requestId = String(request.payload.requestId);
+  const cancelled = await running.app.inject({ method: "POST", url: `/dev/sessions/${sessionId}/observations/${requestId}/cancel` });
+  assert.equal(cancelled.statusCode, 200); assert.equal((await receive(socket)).messageType, "observation.cancel");
+  const again = await running.app.inject({ method: "POST", url: `/dev/sessions/${sessionId}/observations/${requestId}/cancel` });
+  assert.equal(again.json().request.state, "cancelled"); socket.terminate();
+});
+
+test("disconnect abandons in-flight request and resume never redispatches it", async context => {
+  const running = await server({ leaseDurationMs: 5_000, heartbeatIntervalMs: 1_000 });
+  context.after(() => running.app.close());
+  const first = await connect(running.url); const base = createAgentHello();
+  const offered = { ...base, payload: { ...base.payload, supportedCapabilities: [{ id: "system.runtime.summary", version: "1.0" }] } };
+  first.send(JSON.stringify(offered)); const hello = await receive(first); const sessionId = String(hello.sessionId);
+  const started = await running.app.inject({ method: "POST", url: `/dev/sessions/${sessionId}/observations`, payload: { capabilityId: "system.runtime.summary" } });
+  const requestId = String(started.json().request.requestId); await receive(first);
+  first.send(JSON.stringify({ protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.accepted",
+    sessionId, correlationId: requestId, timestamp: new Date().toISOString(), payload: { requestId } }));
+  await waitUntil(() => running.observationStore.get(requestId)?.state === "executing"); first.terminate();
+  await waitUntil(() => running.observationStore.get(requestId)?.state === "abandoned");
+  assert.equal(running.observationStore.get(requestId)?.outcomeUnknown, true);
+
+  const resumed = await connect(running.url); resumed.send(JSON.stringify({ protocolVersion: "1.0", messageId: crypto.randomUUID(),
+    messageType: "session.resume.request", sessionId, timestamp: new Date().toISOString(), payload: {
+      agentInstanceId: offered.payload.agentInstanceId, resumeToken: hello.payload.resumeToken } }));
+  assert.equal((await receive(resumed)).payload.accepted, true);
+  const unexpected = await Promise.race([receive(resumed).then(() => true), new Promise<boolean>(resolve => setTimeout(() => resolve(false), 100))]);
+  assert.equal(unexpected, false); assert.equal(running.observationStore.get(requestId)?.state, "abandoned"); resumed.terminate();
+});
+
+test("revocation cancels in-flight request before proactively closing socket", async context => {
+  const running = await server({ leaseDurationMs: 10_000, heartbeatIntervalMs: 1_000 }); context.after(() => running.app.close());
+  const socket = await connect(running.url); const base = createAgentHello();
+  socket.send(JSON.stringify({ ...base, payload: { ...base.payload, supportedCapabilities: [{ id: "system.runtime.summary", version: "1.0" }] } }));
+  const hello = await receive(socket); const sessionId = String(hello.sessionId);
+  const started = await running.app.inject({ method: "POST", url: `/dev/sessions/${sessionId}/observations`, payload: { capabilityId: "system.runtime.summary" } });
+  const requestId = String(started.json().request.requestId); await receive(socket);
+  const closed = new Promise<void>(resolve => socket.once("close", () => resolve())); running.revokeSession(sessionId); await closed;
+  assert.equal(running.observationStore.get(requestId)?.state, "cancelled"); assert.equal(running.store.get(sessionId)?.state, "revoked");
 });
 
 test("real .NET Agent connects, heartbeats and closes cleanly", async context => {

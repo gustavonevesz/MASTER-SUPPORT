@@ -25,7 +25,7 @@ Status: conceitual. Cardinalidades, campos e agregados serão validados por caso
 | RiskLevel | Classificação conceitual R0–R4; não é autorização por si só. | provisório |
 | AuditEvent | Evento append-only de segurança/operação com ator, ação, alvo, correlação, tempo e resultado. | núcleo |
 
-Na FOUNDATION-003, `ObservationRequest` é um caso de uso operacional transitório, não um Job nem uma entidade persistida. Ele referencia Session e Capability negociada, possui `requestId` e lifecycle `Created/Accepted/Executing/Result|Failure|Timeout`. Evidence e Observation resultantes são guardadas somente em memória; reinício perde todo esse estado por desenho.
+Na FOUNDATION-004, `ObservationRequest` continua um caso de uso operacional transitório, não um Job nem uma entidade persistida. Referencia Session e Capability negociada, possui `requestId`, deadline e lifecycle `created/accepted/executing/completed|failed|timed_out|cancelled|abandoned`. `outcomeUnknown` qualifica abandono quando o Server não pode afirmar se houve execução. Evidence e Observation aceitas são guardadas somente em memória; reinício perde todo esse estado por desenho.
 
 ## Relações principais
 
@@ -60,6 +60,8 @@ erDiagram
 - **Execution result ≠ Verification ≠ Resolution.**
 - **Evidence ≠ Observation:** evidência é o artefato/dado; observação é a afirmação sustentada.
 - **ObservationRequest ≠ Job:** a primeira coordena coleta R0 read-only; um Job futuro poderá orquestrar Capability para uma Action, sem fundir conhecimento produzido com execução.
+- **Execution outcome ≠ Reconciled outcome:** o Agent pode produzir um resultado que o Server rejeita ou classifica como tardio por perda de autoridade.
+- **Reconciliation ≠ Verification:** reconciliação valida pertencimento, correlação e autoridade do resultado; verificação avalia o objetivo operacional.
 - **Asset ≠ Endpoint observado ≠ AgentInstance ≠ Session:** um agente temporário pode abrir nova Session para o mesmo Asset; um endpoint observado pode permanecer não confirmado e não deve receber identidade confiável automaticamente.
 
 ## Invariantes
@@ -71,6 +73,8 @@ erDiagram
 5. Saídas podem ser truncadas/redigidas, mas essa transformação deve ser declarada.
 6. Encerrar Session impede novos leases e invalida autoridade ainda não consumida.
 7. Correlação ou reconciliação de Endpoint observado com Asset preserva fonte, confiança e histórico; não cria confirmação implícita.
+8. Estado terminal de ObservationRequest não reabre e resume não reexecuta request antiga automaticamente.
+9. Ausência de resultado não prova ausência de execução; outcome desconhecido permanece explícito.
 
 ## Ainda não decidido
 

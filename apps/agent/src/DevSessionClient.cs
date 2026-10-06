@@ -34,6 +34,7 @@ public sealed class DevSessionClient
 
         var completed = 0;
         var pendingHeartbeats = new HashSet<Guid>();
+        var observationTasks = new System.Collections.Concurrent.ConcurrentDictionary<Task, byte>();
         Task<string?> receive = _transport.ReceiveAsync(cancellationToken);
         var nextHeartbeat = Task.Delay(TimeSpan.FromSeconds(interval), cancellationToken);
         while (!cancellationToken.IsCancellationRequested && (heartbeatLimit is null || completed < heartbeatLimit))
@@ -57,6 +58,8 @@ public sealed class DevSessionClient
             var incoming = await receive;
             if (incoming is null)
             {
+                _observations.CancelSession(sessionId, "disconnected");
+                await _observations.WaitForSessionIdleAsync(sessionId);
                 Console.WriteLine("Session ended by server; no further observation requests will be accepted.");
                 return 0;
             }
@@ -73,7 +76,14 @@ public sealed class DevSessionClient
             }
             else if (messageType == "observation.request")
             {
-                await _observations.HandleAsync(incoming, sessionId, negotiatedCapabilities, _transport, cancellationToken);
+                var task = _observations.HandleAsync(incoming, sessionId, negotiatedCapabilities, _transport, cancellationToken);
+                observationTasks.TryAdd(task, 0);
+                _ = task.ContinueWith(completedTask => observationTasks.TryRemove(completedTask, out _), CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+            else if (messageType == "observation.cancel")
+            {
+                await _observations.HandleCancelAsync(incoming, sessionId, _transport, cancellationToken);
             }
             else if (messageType == "protocol.error")
             {
@@ -82,6 +92,8 @@ public sealed class DevSessionClient
         }
 
         Console.WriteLine("Closing...");
+        _observations.CancelSession(sessionId, "session_closed");
+        await _observations.WaitForSessionIdleAsync(sessionId);
         var closeId = Guid.NewGuid();
         await _transport.SendAsync(JsonSerializer.Serialize(new
         {

@@ -13,13 +13,14 @@
     "timestamp": { "type": "string", "format": "date-time" },
     "payload": {
       "type": "object",
-      "required": ["requestId", "capabilityId", "capabilityVersion", "timeoutMs", "maxPayloadBytes"],
+      "required": ["requestId", "capabilityId", "capabilityVersion", "timeoutMs", "maxPayloadBytes", "deadline"],
       "properties": {
         "requestId": { "type": "string", "format": "uuid" },
         "capabilityId": { "type": "string", "minLength": 1 },
         "capabilityVersion": { "type": "string", "minLength": 1 },
         "timeoutMs": { "type": "integer" },
-        "maxPayloadBytes": { "type": "integer" }
+        "maxPayloadBytes": { "type": "integer" },
+        "deadline": { "type": "string", "format": "date-time" }
       },
       "additionalProperties": false
     }

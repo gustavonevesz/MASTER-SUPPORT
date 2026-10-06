@@ -30,6 +30,8 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 | Dados pessoais | minimizar, registrar finalidade, restringir acesso e aplicar decisões organizacionais/LGPD futuras |
 | Dados internos da Master Health | classificar conforme política corporativa ainda a definir; deny by default para exportação e IA |
 | `system.runtime.summary` | Evidence `RAW` mesmo contendo somente plataforma/runtime; store efêmero em memória, máximo 16 KiB, sem IA e sem payload em logs/consulta sanitizada |
+| Resultado tardio | descartar o payload/Evidence RAW; manter no máximo IDs, tipo, instante, tamanho e motivo sanitizados em memória |
+| Métricas e AuditEvents da Observation | somente contagens, estado, IDs técnicos, capability, duração, tamanho e motivo; nunca payload, hostname, usuário, token ou Evidence RAW |
 
 ## Regras iniciais
 
@@ -41,6 +43,8 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 6. Conteúdo do endpoint é dado não confiável também contra prompt injection; AI-SAFE exige sanitização semântica além de mascaramento de segredos.
 7. AuditEvent deve preferir metadados e referências; append-only não justifica registrar segredo.
 8. Logs de Observation usam somente `sessionId`, `requestId`, capability, estado, duração, IDs e `payloadSize`; o conteúdo RAW permanece separado.
+9. Reconciliation valida metadados antes de qualquer armazenamento do payload; resultado tardio ou rejeitado não cria Evidence.
+10. Limites são aplicados antes de armazenamento e logging. Payload excessivo é rejeitado, nunca truncado e apresentado como completo.
 
 ## Decisões organizacionais pendentes
 

@@ -66,7 +66,10 @@ const sessionValidators = new Map<string, ValidateFunction>([
   ["observation.accepted", await loadValidator("observation-accepted.schema.json")],
   ["observation.result", await loadValidator("observation-result.schema.json")],
   ["observation.failed", await loadValidator("observation-failed.schema.json")],
+  ["observation.cancelled", await loadValidator("observation-cancelled.schema.json")],
 ]);
+
+const observationCancelValidator = await loadValidator("observation-cancel.schema.json");
 
 function validate<T>(validator: ValidateFunction, value: unknown): ValidationResult<T> {
   return validator(value)
@@ -91,6 +94,10 @@ export function validateSessionMessage(messageType: string, value: unknown): Val
 
 export function validateObservationRequest(value: unknown): ValidationResult<Record<string, unknown>> {
   return validate<Record<string, unknown>>(observationRequestValidator, value);
+}
+
+export function validateObservationCancel(value: unknown): ValidationResult<Record<string, unknown>> {
+  return validate<Record<string, unknown>>(observationCancelValidator, value);
 }
 
 export async function readJson(path: string): Promise<unknown> {

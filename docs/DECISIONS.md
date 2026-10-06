@@ -11,7 +11,8 @@
 | [ADR-007](adr/ADR-007-contract-definition-strategy.md) | JSON Schema 2020-12 como fonte neutra de contratos | Aceito |
 | [ADR-008](adr/ADR-008-control-plane-http-framework.md) | Fastify como borda HTTP do Control Plane | Aceito |
 | [ADR-009](adr/ADR-009-experimental-realtime-transport.md) | WebSocket atrás de adapter, somente em Trial | Trial |
+| [ADR-010](adr/ADR-010-observation-reconciliation.md) | Resultado recebido exige reconciliação; terminais não reabrem nem provocam reexecução | Aceito |
 
 Status permitidos: `Proposto`, `Trial`, `Aceito`, `Rejeitado`, `Substituído`. Os seis ADRs iniciais foram aceitos na GATE-000; ADR-007 e ADR-008 foram aceitos na FOUNDATION-001; ADR-009 permanece em Trial. Alterações materiais serão feitas por novo ADR ou revisão explicitamente versionada, preservando histórico no Git.
 
-A FOUNDATION-003 concretiza, sem nova decisão arquitetural, a ADR-004: registry local explícita e uma coleta R0/ReadOnly em C#. ObservationRequest não foi promovida a Job; a relação futura foi registrada na própria ADR-004. A ADR-009 continua Trial e a ADR-007 continua exigindo substituição do validador antes de qualquer keyword fora do subconjunto aceito.
+A FOUNDATION-003 concretizou a ADR-004 com registry local explícita e uma coleta R0/ReadOnly em C#. A FOUNDATION-004 aceitou a ADR-010 para separar execution outcome de reconciled outcome. ObservationRequest não foi promovida a Job. A ADR-009 continua Trial e a ADR-007 continua exigindo substituição do validador antes de qualquer keyword fora do subconjunto aceito.

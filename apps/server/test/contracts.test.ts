@@ -46,6 +46,7 @@ test("ObservationRequest and distinct Evidence/Observation result satisfy shared
   const request = { protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.request", sessionId,
     correlationId: requestId, timestamp: new Date().toISOString(), payload: {
       requestId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", timeoutMs: 5_000, maxPayloadBytes: 16_384,
+      deadline: new Date(Date.now() + 5_000).toISOString(),
     } };
   assert.equal(validateObservationRequest(request).valid, true);
   const evidenceId = crypto.randomUUID();

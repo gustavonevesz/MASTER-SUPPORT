@@ -6,6 +6,9 @@ namespace MasterSupport.Agent.Transport;
 public sealed class WebSocketAgentTransport : IAgentTransport
 {
     private readonly ClientWebSocket _socket = new();
+    private readonly SemaphoreSlim _sendGate = new(1, 1);
+    private int _pendingSends;
+    private const int MaxPendingSends = 4;
     public AgentConnectionState State => _socket.State switch
     {
         WebSocketState.None => AgentConnectionState.Disconnected,
@@ -16,8 +19,22 @@ public sealed class WebSocketAgentTransport : IAgentTransport
     };
 
     public Task ConnectAsync(Uri uri, CancellationToken cancellationToken) => _socket.ConnectAsync(uri, cancellationToken);
-    public Task SendAsync(string message, CancellationToken cancellationToken) =>
-        _socket.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, cancellationToken);
+    public async Task SendAsync(string message, CancellationToken cancellationToken)
+    {
+        if (Encoding.UTF8.GetByteCount(message) > 64 * 1024) throw new InvalidDataException("Protocol message exceeds 64 KiB.");
+        if (Interlocked.Increment(ref _pendingSends) > MaxPendingSends)
+        {
+            Interlocked.Decrement(ref _pendingSends);
+            throw new InvalidOperationException("Agent outbound backpressure limit reached.");
+        }
+        try
+        {
+            await _sendGate.WaitAsync(cancellationToken);
+            try { await _socket.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, cancellationToken); }
+            finally { _sendGate.Release(); }
+        }
+        finally { Interlocked.Decrement(ref _pendingSends); }
+    }
 
     public async Task<string?> ReceiveAsync(CancellationToken cancellationToken)
     {
@@ -41,6 +58,7 @@ public sealed class WebSocketAgentTransport : IAgentTransport
 
     public ValueTask DisposeAsync()
     {
+        _sendGate.Dispose();
         _socket.Dispose();
         return ValueTask.CompletedTask;
     }

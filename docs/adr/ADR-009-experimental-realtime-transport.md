@@ -10,7 +10,7 @@ Trial na FOUNDATION-002.
 
 ## Evidência
 
-Um teste real Node↔.NET comprovou canal bidirecional, handshake, heartbeat correlacionado, fechamento, disconnect e nova conexão. Um harness real SSE+HTTP comprovou que a alternativa exige um stream Server→Agent e requests Agent→Server separados, elevando coordenação e observabilidade para este caso bidirecional.
+Um teste real Node↔.NET comprovou canal bidirecional, handshake, heartbeat correlacionado, fechamento, disconnect e nova conexão. Um harness real SSE+HTTP comprovou que a alternativa exige um stream Server→Agent e requests Agent→Server separados, elevando coordenação e observabilidade para este caso bidirecional. Na FOUNDATION-004, um reverse proxy local confirmou upgrade, heartbeat, queda, resume manual, fechamento e limite de mensagem; o teste de slow consumer confirmou falha bounded explícita. Isso não representa rede ou proxy corporativo.
 
 ## Limites
 

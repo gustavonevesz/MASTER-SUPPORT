@@ -4,7 +4,7 @@ import { logEvent } from "./logger.js";
 import { RealtimeSessionController } from "./realtime/controller.js";
 import { ActiveConnectionRegistry } from "./realtime/connection-registry.js";
 import { InMemoryObservationStore, sanitizeObservation, type ObservationStore } from "./observation/store.js";
-import { ObservationService, runtimeSummaryCapability } from "./observation/service.js";
+import { ObservationService, runtimeSummaryCapability, type ObservationOptions } from "./observation/service.js";
 import type { Clock } from "./session/clock.js";
 import { systemClock } from "./session/clock.js";
 import { SessionService, type SessionOptions } from "./session/service.js";
@@ -28,6 +28,7 @@ export function buildApp(options: {
   exposeDevelopmentSessions?: boolean;
   observationStore?: ObservationStore;
   observationTimeoutMs?: number;
+  observationOptions?: Partial<ObservationOptions>;
 } = {}): ServerContext {
   const app = Fastify({ logger: false });
   const clock = options.clock ?? systemClock;
@@ -41,7 +42,10 @@ export function buildApp(options: {
   });
   const connections = new ActiveConnectionRegistry();
   const observationStore = options.observationStore ?? new InMemoryObservationStore();
-  const observations = new ObservationService(store, connections, observationStore, clock, options.observationTimeoutMs);
+  const observations = new ObservationService(store, connections, observationStore, clock, {
+    ...(options.observationTimeoutMs === undefined ? {} : { timeoutMs: options.observationTimeoutMs }),
+    ...options.observationOptions,
+  });
   app.get("/health", async () => ({ status: "ok", service: "master-support-server", version: productVersion, protocolVersions: supportedProtocolVersions }));
   app.get("/version", async () => ({ productVersion, protocolVersions: supportedProtocolVersions }));
   if (options.exposeDevelopmentSessions !== false) {
@@ -50,6 +54,9 @@ export function buildApp(options: {
       const { sessionId } = request.params as { sessionId: string };
       return { developmentOnly: true, observations: observationStore.listForSession(sessionId).map(sanitizeObservation) };
     });
+    app.get("/dev/metrics", async () => ({ developmentOnly: true, metrics: observations.metrics.snapshot(
+      store.list().filter(session => session.state === "active").length, observations.activeCount()) }));
+    app.get("/dev/audit", async () => ({ developmentOnly: true, events: observations.audit.list() }));
     app.post("/dev/sessions/:sessionId/observations", async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
       const body = request.body as { capabilityId?: unknown } | undefined;
@@ -57,12 +64,17 @@ export function buildApp(options: {
         return reply.code(400).send({ code: "invalid_capability", message: "Only the allowlisted capabilityId is accepted." });
       }
       try {
-        const record = await observations.request(sessionId, body.capabilityId);
-        return reply.code(record.state === "result" ? 200 : 502).send({ developmentOnly: true, request: sanitizeObservation(record) });
+        const record = observations.start(sessionId, body.capabilityId);
+        return reply.code(202).send({ developmentOnly: true, request: sanitizeObservation(record) });
       } catch (error) {
         const code = error instanceof Error ? error.message : "observation_rejected";
         return reply.code(409).send({ code });
       }
+    });
+    app.post("/dev/sessions/:sessionId/observations/:requestId/cancel", async (request, reply) => {
+      const { sessionId, requestId } = request.params as { sessionId: string; requestId: string };
+      try { return { developmentOnly: true, request: sanitizeObservation(observations.cancel(sessionId, requestId)) }; }
+      catch (error) { return reply.code(404).send({ code: error instanceof Error ? error.message : "unknown_request" }); }
     });
   }
   app.register(async realtime => {
@@ -73,13 +85,18 @@ export function buildApp(options: {
   });
 
   const expirationTimer = setInterval(() => {
-    for (const session of sessions.expireDueSessions()) logEvent("info", "session_expired", { sessionId: session.id });
+    observations.expireDueRequests();
+    for (const session of sessions.expireDueSessions()) {
+      observations.authorityLost(session.id, "session_expired"); connections.close(session.id, 1008, "session_expired");
+      logEvent("info", "session_expired", { sessionId: session.id });
+    }
   }, 500);
   expirationTimer.unref();
   app.addHook("onClose", async () => clearInterval(expirationTimer));
   return {
     app, sessions, store, observationStore, observations,
     revokeSession(sessionId: string): void {
+      observations.authorityLost(sessionId, "session_revoked");
       const session = sessions.revoke(sessionId);
       logEvent("info", "session_revoked", { sessionId: session.id });
       connections.close(sessionId);
