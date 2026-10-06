@@ -4,7 +4,7 @@ Master Support é a futura plataforma inteligente de helpdesk e administração 
 
 ## Estado atual
 
-O repositório está na **Etapa 0 — Fundação**. Há somente documentação arquitetural e diretórios reservados. Não existem aplicações, agente, infraestrutura, dependências ou funcionalidades implementadas.
+O repositório contém a **FOUNDATION-001**: contratos JSON Schema, um servidor HTTP TypeScript mínimo e um Agent C# de console. Eles provam build, validação cross-language e limites arquiteturais; não constituem um produto operacional.
 
 O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidores, Linux, impressoras, scanners, gerenciamento persistente, IA autônoma e ML permanecem fora do primeiro incremento.
 
@@ -28,10 +28,57 @@ O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidor
 - [Índice de decisões](docs/DECISIONS.md)
 - [Questões abertas](docs/OPEN-QUESTIONS.md)
 - [Roadmap](docs/ROADMAP-v0.1.md)
+- [Baseline de desenvolvimento](docs/architecture/DEVELOPMENT-BASELINE-v0.1.md)
+- [Spike de transporte](docs/spikes/SPIKE-001-realtime-transport.md)
+- [Spike de PowerShell](docs/spikes/SPIKE-002-powershell-hosting.md)
 
-## Estrutura reservada
+## O que existe
 
-`apps/`, `packages/` e `tests/` reservam limites futuros; sua decomposição interna será criada apenas na FOUNDATION-001, após autorização explícita dessa etapa.
+- `apps/server`: Fastify com `GET /health` e `GET /version`.
+- `apps/agent`: console application temporário; exibe versão/modo/status e encerra.
+- `packages/contracts`: JSON Schema 2020-12 para Hello, envelope, capability descriptor e erro.
+- fixtures e testes TypeScript, .NET e round-trip cross-language por arquivos temporários.
+- CI mínimo e `scripts/verify.ps1`.
+
+Não existem conexão Agent↔Server, comando remoto, PowerShell no Agent, autenticação, autorização, persistência, banco, Web UI, IA ou privilégio administrativo.
+
+## Requisitos de desenvolvimento
+
+- Windows x64;
+- Node.js 24 LTS e npm 11;
+- .NET SDK 10 LTS;
+- PowerShell 5.1 ou superior para o script local;
+- Git.
+
+Instale dependências declaradas com `npm ci` e `dotnet restore apps/agent/test/MasterSupport.Agent.Tests.csproj`. Nenhuma ferramenta precisa ser instalada globalmente pelo projeto.
+
+## Verificar
+
+```powershell
+.\scripts\verify.ps1
+```
+
+O script restaura dependências, compila, executa testes .NET/TypeScript, valida o round-trip e roda `git diff --check`.
+
+## Executar os skeletons
+
+Servidor:
+
+```powershell
+npm ci
+npm run build
+npm run start --workspace @master-support/server
+```
+
+Por padrão escuta somente em `127.0.0.1:3000`. Para desenvolvimento, `MASTER_SUPPORT_HOST` e `MASTER_SUPPORT_PORT` podem alterar o bind.
+
+Agent:
+
+```powershell
+dotnet run --project apps/agent/src/MasterSupport.Agent.csproj
+```
+
+O Agent apenas apresenta seu estado local e encerra; não conecta nem executa comandos.
 
 ## Regra de evolução
 

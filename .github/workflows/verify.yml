@@ -1,0 +1,23 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  foundation:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: npm ci
+      - run: dotnet restore apps/agent/test/MasterSupport.Agent.Tests.csproj
+      - run: dotnet build apps/agent/src/MasterSupport.Agent.csproj --no-restore --configuration Debug
+      - run: dotnet test apps/agent/test/MasterSupport.Agent.Tests.csproj --no-restore --configuration Debug
+      - run: npm run verify:ts

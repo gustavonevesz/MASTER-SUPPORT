@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.master-support.invalid/protocol/1.0/server-hello.schema.json",
+  "title": "ServerHello",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "messageType", "sessionId", "correlationId", "timestamp", "expiresAt", "payload"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "const": "server.hello" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "required": ["serverVersion", "selectedProtocolVersion", "compatibility", "developmentOnly"],
+      "properties": {
+        "serverVersion": { "type": "string", "minLength": 1 },
+        "selectedProtocolVersion": { "const": "1.0" },
+        "compatibility": { "enum": ["compatible"] },
+        "developmentOnly": { "const": true }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -8,5 +8,7 @@
 | [ADR-004](adr/ADR-004-command-execution-model.md) | Capabilities primeiro; terminal controlado futuro | Aceito |
 | [ADR-005](adr/ADR-005-transport-abstraction.md) | Protocolo independente; túnel substituível; WebSocket não decidido | Aceito |
 | [ADR-006](adr/ADR-006-data-storage-strategy.md) | PostgreSQL primário; estado e histórico distintos | Aceito |
+| [ADR-007](adr/ADR-007-contract-definition-strategy.md) | JSON Schema 2020-12 como fonte neutra de contratos | Aceito |
+| [ADR-008](adr/ADR-008-control-plane-http-framework.md) | Fastify como borda HTTP do Control Plane | Aceito |
 
-Status permitidos: `Proposto`, `Aceito`, `Rejeitado`, `Substituído`. Os seis ADRs iniciais foram aceitos na GATE-000. Alterações materiais serão feitas por novo ADR ou revisão explicitamente versionada, preservando histórico no Git.
+Status permitidos: `Proposto`, `Aceito`, `Rejeitado`, `Substituído`. Os seis ADRs iniciais foram aceitos na GATE-000; ADR-007 e ADR-008 foram aceitos na FOUNDATION-001. Alterações materiais serão feitas por novo ADR ou revisão explicitamente versionada, preservando histórico no Git.

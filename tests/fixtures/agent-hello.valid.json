@@ -1,0 +1,15 @@
+{
+  "protocolVersion": "1.0",
+  "messageId": "11111111-1111-4111-8111-111111111111",
+  "messageType": "agent.hello",
+  "timestamp": "2026-10-06T12:00:00Z",
+  "payload": {
+    "agentVersion": "0.1.0",
+    "agentInstanceId": "22222222-2222-4222-8222-222222222222",
+    "supportedProtocolVersions": ["1.0"],
+    "runtime": ".NET 10",
+    "os": "Windows Demo",
+    "architecture": "x64",
+    "supportedCapabilities": []
+  }
+}

@@ -8,18 +8,17 @@ Especificação, arquitetura conceitual, domínio, threat model, ADRs, dúvidas 
 
 ## FOUNDATION-001 — Contracts + Server Skeleton + Agent Skeleton
 
-Objetivo: provar compilação e limites, não o fluxo completo.
+Status: implementada, aguardando gate de revisão. Objetivo: provar compilação e limites, não o fluxo completo.
 
-- fixar versões LTS após validação;
-- criar estrutura interna do monorepo;
-- definir envelope mínimo e schemas de Session/Job/Result;
-- gerar/validar contratos em TypeScript e C# com fixtures;
-- criar skeleton do servidor e console agent sem execução privilegiada;
-- testes de contrato e CI mínimos;
-- spikes documentados de WebSocket e estratégia PowerShell;
-- atualizar ADRs e threat model.
+- versões LTS fixadas;
+- estrutura interna mínima materializada;
+- envelopes Hello e erros definidos sem Session/Job operacional;
+- contratos validados em TypeScript e C# com fixtures;
+- servidor e console agent sem execução privilegiada;
+- testes, CI e round-trip cross-language;
+- spikes documentais de transporte e PowerShell.
 
-Critério de saída: builds reproduzíveis, contrato round-trip e nenhum comando real/remoto.
+Critério de saída: builds reproduzíveis, contrato round-trip e nenhum comando real/remoto. A conclusão depende do gate após verificação automatizada.
 
 ## FOUNDATION-002 — Session Backbone
 

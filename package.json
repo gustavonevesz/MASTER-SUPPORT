@@ -1,0 +1,19 @@
+{
+  "name": "master-support",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11 <12"
+  },
+  "workspaces": [
+    "apps/server"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @master-support/server",
+    "test": "npm run test --workspace @master-support/server",
+    "typecheck": "npm run typecheck --workspace @master-support/server",
+    "verify:ts": "npm run typecheck && npm run build && npm test"
+  }
+}

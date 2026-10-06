@@ -1,0 +1,13 @@
+node_modules/
+dist/
+bin/
+obj/
+.vs/
+.idea/
+TestResults/
+*.user
+*.suo
+*.trx
+coverage/
+artifacts/
+*.tmp
