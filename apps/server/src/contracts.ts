@@ -33,6 +33,10 @@ export type ServerHello = Readonly<{
     serverVersion: string;
     selectedProtocolVersion: "1.0";
     compatibility: "compatible";
+    createdAt: string;
+    heartbeatIntervalSeconds: number;
+    resumeToken: string;
+    negotiatedCapabilities: readonly CapabilityDescriptor[];
     developmentOnly: true;
   }>;
 }>;
@@ -54,6 +58,12 @@ async function loadValidator(fileName: string): Promise<ValidateFunction> {
 const agentHelloValidator = await loadValidator("agent-hello.schema.json");
 const serverHelloValidator = await loadValidator("server-hello.schema.json");
 
+const sessionValidators = new Map<string, ValidateFunction>([
+  ["heartbeat", await loadValidator("heartbeat.schema.json")],
+  ["session.close", await loadValidator("session-close.schema.json")],
+  ["session.resume.request", await loadValidator("session-resume-request.schema.json")],
+]);
+
 function validate<T>(validator: ValidateFunction, value: unknown): ValidationResult<T> {
   return validator(value)
     ? { valid: true, value: value as T }
@@ -66,6 +76,13 @@ export function validateAgentHello(value: unknown): ValidationResult<AgentHello>
 
 export function validateServerHello(value: unknown): ValidationResult<ServerHello> {
   return validate<ServerHello>(serverHelloValidator, value);
+}
+
+export function validateSessionMessage(messageType: string, value: unknown): ValidationResult<Record<string, unknown>> {
+  const validator = sessionValidators.get(messageType);
+  return validator
+    ? validate<Record<string, unknown>>(validator, value)
+    : { valid: false, errors: [] };
 }
 
 export async function readJson(path: string): Promise<unknown> {

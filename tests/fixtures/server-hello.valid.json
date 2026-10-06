@@ -10,6 +10,10 @@
     "serverVersion": "0.1.0",
     "selectedProtocolVersion": "1.0",
     "compatibility": "compatible",
+    "createdAt": "2026-10-06T12:00:01Z",
+    "heartbeatIntervalSeconds": 3,
+    "resumeToken": "synthetic-development-token-0000000000000000",
+    "negotiatedCapabilities": [],
     "developmentOnly": true
   }
 }

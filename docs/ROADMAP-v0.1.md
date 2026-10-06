@@ -8,7 +8,7 @@ Especificação, arquitetura conceitual, domínio, threat model, ADRs, dúvidas 
 
 ## FOUNDATION-001 — Contracts + Server Skeleton + Agent Skeleton
 
-Status: implementada, aguardando gate de revisão. Objetivo: provar compilação e limites, não o fluxo completo.
+Status: concluída no commit `6d8f3a1`. Objetivo: provar compilação e limites, não o fluxo completo.
 
 - versões LTS fixadas;
 - estrutura interna mínima materializada;
@@ -22,7 +22,11 @@ Critério de saída: builds reproduzíveis, contrato round-trip e nenhum comando
 
 ## FOUNDATION-002 — Session Backbone
 
-Lifecycle temporário, handshake experimental, heartbeat/lease, conexão de saída e encerramento/revogação. Apenas ambiente de desenvolvimento e identidade provisória documentada.
+Status: implementada, aguardando gate de revisão. Lifecycle temporário, WebSocket Trial em loopback, handshake, heartbeat/lease, resume efêmero, deduplicação limitada e encerramento/revogação em memória. Apenas desenvolvimento; sem identidade confiável.
+
+## FOUNDATION-003 — Read-only Observation Backbone
+
+Próxima etapa proposta: uma capability estritamente somente leitura, seu contrato, coleta sintética/segura, Evidence e Observation, sempre com sessão dev-only e sem ação mutável. O escopo depende de gate explícito.
 
 ## VERTICAL-001 — Read-only Preflight
 

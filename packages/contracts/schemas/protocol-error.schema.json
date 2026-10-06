@@ -14,7 +14,7 @@
       "type": "object",
       "required": ["code", "message"],
       "properties": {
-        "code": { "enum": ["unsupported_protocol", "invalid_message", "incompatible_agent"] },
+        "code": { "enum": ["unsupported_protocol", "invalid_message", "incompatible_agent", "session_not_active", "resume_rejected"] },
         "message": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false

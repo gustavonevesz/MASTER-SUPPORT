@@ -30,5 +30,10 @@ test("serializes messages that remain valid", () => {
   const validatedAgent = validateAgentHello(agent);
   assert.equal(validatedAgent.valid, true);
   if (!validatedAgent.valid) return;
-  assert.equal(validateServerHello(JSON.parse(JSON.stringify(createServerHello(validatedAgent.value)))).valid, true);
+  const now = new Date();
+  assert.equal(validateServerHello(JSON.parse(JSON.stringify(createServerHello(validatedAgent.value, {
+    id: "44444444-4444-4444-8444-444444444444", createdAt: now,
+    expiresAt: new Date(now.getTime() + 15_000), resumeToken: "synthetic-development-token-0000000000000000",
+    capabilities: [],
+  }, 3)))).valid, true);
 });

@@ -20,20 +20,28 @@ export function createAgentHello(): AgentHello {
   };
 }
 
-export function createServerHello(agentHello: AgentHello): ServerHello {
+export function createServerHello(
+  agentHello: AgentHello,
+  session: { id: string; createdAt: Date; expiresAt: Date; resumeToken: string; capabilities: readonly { id: string; version: string }[] },
+  heartbeatIntervalSeconds: number,
+): ServerHello {
   const timestamp = new Date();
   return {
     protocolVersion: "1.0",
     messageId: randomUUID(),
     messageType: "server.hello",
-    sessionId: randomUUID(),
+    sessionId: session.id,
     correlationId: agentHello.messageId,
     timestamp: timestamp.toISOString(),
-    expiresAt: new Date(timestamp.getTime() + 15 * 60_000).toISOString(),
+    expiresAt: session.expiresAt.toISOString(),
     payload: {
       serverVersion: productVersion,
       selectedProtocolVersion: "1.0",
       compatibility: "compatible",
+      createdAt: session.createdAt.toISOString(),
+      heartbeatIntervalSeconds,
+      resumeToken: session.resumeToken,
+      negotiatedCapabilities: session.capabilities,
       developmentOnly: true,
     },
   };

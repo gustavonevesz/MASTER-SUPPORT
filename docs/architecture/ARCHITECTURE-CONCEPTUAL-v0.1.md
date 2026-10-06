@@ -77,7 +77,26 @@ Os nomes de campos ainda não estão congelados, mas toda mensagem Agent ↔ Con
 
 No handshake, o agente informa conceitos equivalentes a versão do agente, versões de protocolo compreendidas e capabilities suportadas com suas versões. O servidor seleciona somente uma combinação compatível, pode rejeitar o agente e jamais envia Job para capability não negociada. A evolução deve favorecer mudanças aditivas e uma janela de compatibilidade, sem exigir atualização simultânea de todos os participantes. O mecanismo exato de negociação será definido por contrato na FOUNDATION-001.
 
-WebSocket permanece somente candidato para spike; essas semânticas não podem depender dele.
+WebSocket é o adapter Trial da FOUNDATION-002, conforme ADR-009. Essas semânticas não dependem dele e sua promoção ainda exige evidência fora de loopback.
+
+## Backbone temporário implementado
+
+O Control Plane mantém `Session` apenas em `InMemorySessionStore`. A conexão começa sem autoridade; `AgentHello` válido cria Session `Active` e `ServerHello` entrega lease, intervalo e resume token dev-only. Heartbeat válido renova `lastSeenAt/expiresAt`; queda muda para `Disconnected`; resume exige Session válida, AgentInstance correspondente e token em memória. `Closed`, `Expired` e `Revoked` são terminais.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Active: AgentHello compatível
+  Active --> Disconnected: queda do transporte
+  Disconnected --> Active: resume válido no lease
+  Active --> Closed: SessionClose
+  Disconnected --> Closed: encerramento interno
+  Active --> Revoked: revogação interna
+  Disconnected --> Revoked: revogação interna
+  Active --> Expired: lease termina
+  Disconnected --> Expired: lease termina
+```
+
+Deduplicação é at-most-once apenas para processamento semântico dentro da janela limitada de IDs mantida por Session; não há exactly-once. Uma duplicata de heartbeat pode receber novo ack, mas não renova o lease novamente. Ordem global não é garantida; request/reply usa `correlationId`.
 
 ## Estados mínimos
 

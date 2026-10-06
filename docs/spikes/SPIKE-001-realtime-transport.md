@@ -1,6 +1,6 @@
 # SPIKE-001 — Transporte realtime
 
-Status: análise documental; decisão permanece aberta.
+Status: análise documental complementada por experimento real na FOUNDATION-002.
 
 | Opção | Bidirecionalidade / outbound | Reconexão e queda | Operação e ecossistema |
 |---|---|---|---|
@@ -9,8 +9,12 @@ Status: análise documental; decisão permanece aberta.
 | Long-lived HTTP/streaming | pode carregar stream, mas full duplex e proxy behavior variam | exige framing, keepalive e retomada próprios | menos uniforme entre infraestrutura; risco de reinventar WebSocket/gRPC |
 | gRPC streaming | streaming bidirecional e contratos fortes | lifecycle e backpressure maduros, ainda exige semântica de replay | bom suporte Node/.NET; HTTP/2 e proxies/túneis demandam validação adicional |
 
+## Experimento FOUNDATION-002
+
+- WebSocket: Fastify/Node e `ClientWebSocket`/.NET trocaram mensagens bidirecionais reais em loopback, com handshake, heartbeat, correlação, fechamento e detecção de queda.
+- SSE + HTTP: harness isolado real comprovou downstream por EventSource e upstream por POST separado. Funciona, mas exige dois canais, correlação entre requests e mais estados operacionais.
+- Todos os testes usaram portas dinâmicas; nenhum adapter alternativo foi incorporado ao produto.
+
 ## Resultado
 
-WebSocket continua o candidato mais simples para a primeira conexão outbound bidirecional, mas não foi escolhido definitivamente. FOUNDATION-002 deve executar um spike de rede local com reconexão, heartbeat, proxy corporativo/Cloudflare apenas como compatibilidade de transporte e comportamento de mensagem incerta. Ack, deduplicação, TTL e compatibilidade continuam no protocolo, não no socket.
-
-Nenhum experimento de rede foi integrado nesta etapa porque não acrescentaria evidência suficiente sem modelar lifecycle de sessão, que pertence à FOUNDATION-002.
+WebSocket foi promovido somente a **Trial/Experimental** para o adapter da FOUNDATION-002. Ainda faltam proxy corporativo, TLS, backpressure e rede não local antes de qualquer promoção. Ack, deduplicação, TTL e compatibilidade continuam no protocolo, não no socket.

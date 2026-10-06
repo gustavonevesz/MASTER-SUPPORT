@@ -4,9 +4,9 @@ Estas questões podem alterar segurança, protocolo ou modelo; não devem ser re
 
 | ID | Questão | Por que importa | Momento de decisão |
 |---|---|---|---|
-| OQ-001 | Qual é o bootstrap de confiança da sessão e como o técnico transfere autorização ao endpoint sem expor token reutilizável? | identidade/replay/usabilidade | antes do primeiro handshake real |
+| OQ-001 | Qual é o bootstrap de confiança de produção e como o técnico transfere autorização sem depender do resume token dev-only? | identidade/replay/usabilidade | antes de sair de loopback |
 | OQ-002 | Qual prova define identidade do endpoint temporário sem confundi-la com identidade persistente do Asset? | impersonação e deduplicação | contracts/skeleton |
-| OQ-003 | WebSocket, candidato após análise documental, atende proxies corporativos, retomada, backpressure e cancelamento em experimento real? | transporte e operação | spike de rede FOUNDATION-002 |
+| OQ-003 | WebSocket em Trial atende proxies corporativos, TLS, backpressure e redes reais antes de promoção? | transporte e operação | antes do piloto |
 | OQ-004 | Qual política exata governa Job em execução quando sessão expira/fecha ou conectividade cai? | efeitos parciais e segurança | antes do executor mutável |
 | OQ-005 | Quais capabilities compõem o Preflight mínimo sem coletar dados pessoais/segredos em excesso? | privacidade e diagnóstico | primeira fatia |
 | OQ-006 | Como verificar evidência produzida por endpoint potencialmente comprometido? | confiança do diagnóstico | antes de endpoints gerenciados; baseline agora |
@@ -18,4 +18,4 @@ Estas questões podem alterar segurança, protocolo ou modelo; não devem ser re
 | OQ-012 | Qual critério permite promover informação `Inferred` para `Confirmed` e quem é a autoridade? | qualidade da memória | domínio do incidente |
 | OQ-013 | Qual será a estratégia de atualização, assinatura e revogação do Runtime antes de qualquer modo persistente? | supply chain | antes de Managed Endpoint |
 | OQ-014 | Qual conjunto de dados pode chegar a um LLM e qual serviço fará minimização/redaction? | secrets/prompt injection | antes de IA |
-| OQ-015 | Em que nível de complexidade o validador mínimo C# deve ser substituído por biblioteca JSON Schema completa ou geração de código? | evitar interpretação parcial/divergente | antes de adicionar keywords além do subconjunto testado |
+| OQ-015 | Qual biblioteca JSON Schema C# madura substituirá o validador mínimo quando surgir `$ref`, composição, condicional ou formato customizado? | evitar interpretação parcial/divergente | obrigatoriamente antes da primeira keyword fora do subconjunto ADR-007 |

@@ -34,6 +34,9 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 | T-018 | Ação destrutiva no alvo errado (T/E) | crítico | confirmação forte do alvo/efeito, risk R4, approval específica, dry-run/backup/rollback quando possível |
 | T-019 | Movimento lateral usando endpoint (E) | crítico | proibir credenciais reutilizáveis, segmentar, limitar destinos, sem listener público, escopo de sessão |
 | T-020 | Flood/jobs/saídas esgotam recursos (D) | alto | quotas, backpressure, concorrência/tamanho/tempo limitados, circuit breaker e cancelamento |
+| T-021 | Endpoint WebSocket dev-only exposto fora de loopback permite sessões não autenticadas (S/E) | crítico | loopback por padrão, override explícito com alerta, sem `/dev/sessions` fora de loopback; proibir uso produtivo |
+| T-022 | Resume token dev-only capturado retoma autoridade ainda válida (S) | alto | 256 bits aleatórios, memória apenas, comparação constante, vínculo a Session+AgentInstance, TTL e nunca logar |
+| T-023 | IDs duplicados ou cache sem limite causam replay/DoS (T/D) | alto | deduplicação por sessão com capacidade limitada; sem promessa exactly-once |
 
 ## Cenários de abuso prioritários
 
@@ -41,6 +44,7 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 2. Técnico aprova `restart_spooler`, mas payload é trocado por comando livre: hash/versão da Action e dispatch tipado invalidam Approval.
 3. Endpoint retorna texto “ignore policy”: conteúdo permanece Evidence não confiável e não alcança executor/policy como instrução.
 4. Sessão fecha durante Job: nenhum novo lease; ação em curso segue regra explícita de cancelamento seguro e resultado tardio é marcado.
+5. Conexão cai sem `SessionClose`: estado vira `Disconnected`, mantém somente a janela do lease e depois expira; não é registrado como fechamento limpo.
 
 ## Riscos residuais e validações futuras
 

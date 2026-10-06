@@ -14,8 +14,13 @@ public sealed class ContractService
 
     public IReadOnlyList<string> ValidateAgentHello(string json)
     {
+        return ValidateContract(json, "agent-hello.schema.json");
+    }
+
+    public IReadOnlyList<string> ValidateContract(string json, string schemaName)
+    {
         using var instance = JsonDocument.Parse(json);
-        using var schema = JsonDocument.Parse(File.ReadAllText(SchemaPath("agent-hello.schema.json")));
+        using var schema = JsonDocument.Parse(File.ReadAllText(SchemaPath(schemaName)));
         return _validator.Validate(instance.RootElement, schema.RootElement);
     }
 

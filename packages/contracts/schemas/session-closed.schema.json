@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.master-support.invalid/protocol/1.0/session-closed.schema.json",
+  "title": "SessionClosed",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "messageType", "sessionId", "correlationId", "timestamp", "payload"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "const": "session.closed" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": { "type": "object", "additionalProperties": false }
+  },
+  "additionalProperties": false
+}

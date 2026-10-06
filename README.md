@@ -4,7 +4,7 @@ Master Support é a futura plataforma inteligente de helpdesk e administração 
 
 ## Estado atual
 
-O repositório contém a **FOUNDATION-001**: contratos JSON Schema, um servidor HTTP TypeScript mínimo e um Agent C# de console. Eles provam build, validação cross-language e limites arquiteturais; não constituem um produto operacional.
+O repositório contém a **FOUNDATION-002**: contratos JSON Schema, Control Plane TypeScript, Agent C# e um backbone de Support Session temporária em desenvolvimento. Eles provam comunicação real, lifecycle e compatibilidade; não constituem um produto operacional.
 
 O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidores, Linux, impressoras, scanners, gerenciamento persistente, IA autônoma e ML permanecem fora do primeiro incremento.
 
@@ -34,13 +34,13 @@ O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidor
 
 ## O que existe
 
-- `apps/server`: Fastify com `GET /health` e `GET /version`.
-- `apps/agent`: console application temporário; exibe versão/modo/status e encerra.
+- `apps/server`: Fastify com `GET /health`, `GET /version`, adapter WebSocket experimental em `/session`, store em memória e `/dev/sessions` sanitizado somente em loopback.
+- `apps/agent`: console application temporário com modo explícito `connect-dev`.
 - `packages/contracts`: JSON Schema 2020-12 para Hello, envelope, capability descriptor e erro.
 - fixtures e testes TypeScript, .NET e round-trip cross-language por arquivos temporários.
 - CI mínimo e `scripts/verify.ps1`.
 
-Não existem conexão Agent↔Server, comando remoto, PowerShell no Agent, autenticação, autorização, persistência, banco, Web UI, IA ou privilégio administrativo.
+Não existem comando remoto, Job, PowerShell no Agent, autenticação de produção, autorização, persistência, banco, Web UI, IA ou privilégio administrativo. O resume token é exclusivamente dev-only e não representa identidade confiável.
 
 ## Requisitos de desenvolvimento
 
@@ -80,6 +80,14 @@ dotnet run --project apps/agent/src/MasterSupport.Agent.csproj
 
 O Agent apenas apresenta seu estado local e encerra; não conecta nem executa comandos.
 
+Sessão local de desenvolvimento, com o Server já iniciado:
+
+```powershell
+dotnet run --project apps/agent/src/MasterSupport.Agent.csproj -- connect-dev
+```
+
+O Agent conecta explicitamente a `ws://127.0.0.1:3000/session`, faz handshake e heartbeat e tenta `SessionClose` no Ctrl+C. Não use esse canal fora de ambiente local: ele não possui autenticação de produção.
+
 ## Regra de evolução
 
-Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A próxima etapa proposta é `FOUNDATION-001 — Contracts + Server Skeleton + Agent Skeleton`; ela não faz parte desta entrega.
+Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A próxima etapa proposta é `FOUNDATION-003 — Read-only Observation Backbone`; ela não faz parte desta entrega.

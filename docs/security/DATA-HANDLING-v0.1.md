@@ -19,6 +19,7 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 | Categoria | Tratamento arquitetural inicial |
 |---|---|
 | Senhas, chaves, tokens, cookies e credenciais | segredo; não persistir em texto, não registrar e nunca enviar ao LLM; entrada futura por mecanismo dedicado |
+| Resume token dev-only | segredo efêmero em memória; transmitir somente no canal de desenvolvimento, nunca logar, persistir ou exibir em `/dev/sessions` |
 | stdout/stderr | RAW por padrão; limitar tamanho, acesso e retenção; classificar/redigir antes de persistência prolongada ou IA |
 | Logs de aplicação/agente | metadados mínimos; proibir segredo; payload sensível separado; redaction não deve apagar rastreabilidade da transformação |
 | Windows Event Log | potencialmente contém usuário, caminho, hostname, conteúdo de aplicação e tokens; coleta seletiva por finalidade e janela |

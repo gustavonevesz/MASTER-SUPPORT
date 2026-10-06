@@ -16,6 +16,8 @@ Sessão temporária reduz persistência, superfície e complexidade para provar 
 
 `Created → Connecting → Active → Closing → Closed`, com saídas `Expired` e `Failed`. A sessão possui TTL, heartbeat/lease, vínculo imutável ao endpoint e revogação server-side e agent-side. Encerramento bloqueia novos Jobs, trata jobs ativos por política explícita, revoga autoridade e fecha canal. Reconexão só dentro de janela e identidade válidas.
 
+Na implementação dev-only da FOUNDATION-002, estados persistidos em memória foram reduzidos a `Active`, `Disconnected`, `Closed`, `Expired` e `Revoked`; handshake é estado da conexão, não uma Session já criada. `Closed`, `Expired` e `Revoked` são terminais. Resume só ocorre de `Disconnected` para `Active` dentro do lease, com AgentInstance e token efêmero correspondentes.
+
 ## Trade-offs e consequências
 
 - Técnico precisa iniciar cada atendimento; não há monitoramento contínuo.

@@ -6,7 +6,7 @@ Definir protocolo de aplicação versionado e um `Transport Adapter`; agente ini
 
 ## Status
 
-Aceito na GATE-000 quanto à abstração; mecanismo realtime permanece pendente de spike.
+Aceito na GATE-000 quanto à abstração. WebSocket está em Trial experimental pela ADR-009; não é transporte definitivo.
 
 ## Contexto e alternativas
 

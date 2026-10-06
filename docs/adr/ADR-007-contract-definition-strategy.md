@@ -17,7 +17,8 @@ TypeScript e C# precisam validar a mesma semântica sem tornar modelos de uma li
 - Schemas versionados ficam em `packages/contracts/schemas`.
 - Tipos de conveniência podem existir nos consumidores, mas não substituem validação runtime.
 - Mudança compatível em `1.0` é aditiva e opcional; quebra exige nova versão de protocolo.
-- O validador C# cobre apenas keywords atualmente utilizadas e rejeita explicitamente schema com keyword não suportada; antes de ampliar schemas, deve-se avaliar biblioteca completa/code generation.
+- O validador C# cobre somente `$schema`, `$id`, `title`, `type`, `required`, `properties`, `additionalProperties`, `const`, `enum`, `format`, `minLength`, `minItems`, `uniqueItems` e `items`; rejeita qualquer outra keyword.
+- A substituição é obrigatória antes de introduzir `$ref`, `oneOf`/`allOf`/`anyOf`, condicionais, formatos customizados ou outra keyword fora desse subconjunto. Nesse gate, biblioteca madura é preferível a ampliar o interpretador manual.
 - AJV é usado por implementar draft 2020-12 de modo maduro; `ajv-formats` fornece UUID/date-time sem schema framework adicional.
 
 ## Alternativas

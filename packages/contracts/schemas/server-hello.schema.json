@@ -14,11 +14,27 @@
     "expiresAt": { "type": "string", "format": "date-time" },
     "payload": {
       "type": "object",
-      "required": ["serverVersion", "selectedProtocolVersion", "compatibility", "developmentOnly"],
+      "required": ["serverVersion", "selectedProtocolVersion", "compatibility", "createdAt", "heartbeatIntervalSeconds", "resumeToken", "negotiatedCapabilities", "developmentOnly"],
       "properties": {
         "serverVersion": { "type": "string", "minLength": 1 },
         "selectedProtocolVersion": { "const": "1.0" },
         "compatibility": { "enum": ["compatible"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "heartbeatIntervalSeconds": { "type": "integer" },
+        "resumeToken": { "type": "string", "minLength": 32 },
+        "negotiatedCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "required": ["id", "version"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
         "developmentOnly": { "const": true }
       },
       "additionalProperties": false
