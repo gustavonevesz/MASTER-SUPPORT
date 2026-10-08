@@ -49,6 +49,14 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 | T-033 | Consumidor lento esgota fila/buffer de saída (D) | alto | limite bounded de 64 KiB no Server, máximo de quatro sends pendentes no Agent e fechamento explícito em backpressure |
 | T-034 | Corrida de cancelamento aceita resultado sem autoridade (T/R) | alto | transição terminal atômica no store local, cancelamento idempotente e reconciliação de estado/deadline |
 | T-035 | Payload oversized ou correlation/capability spoofing contorna associação da request (T/D) | alto | limites antes de armazenamento, schemas, correlação exata, capability ID+versão negociada e rejeição auditada |
+| T-036 | Entrada externa explora SQL injection (T/I/E) | crítico | queries parametrizadas; identificadores internos validados; teste hostil preserva schema |
+| T-037 | Connection string/log ou credencial de banco vaza (I/S) | crítico | configuração externa ignorada pelo Git, exemplo fictício, URL nunca logada, rotação/secret store futuros |
+| T-038 | Credencial PostgreSQL comprometida altera ou extrai histórico (S/T/I/R) | crítico | database dedicado, privilégio mínimo/TLS/rotação futuros, acesso restrito; append-only da aplicação não é inviolabilidade |
+| T-039 | Evidence RAW ou Observation maliciosa é persistida/interpretada (T/I) | alto | RAW excluída do schema; allowlist determinística de fatos, tamanho/schema, `MINIMIZED` explícito e sem promoção a AI-SAFE |
+| T-040 | Migration/lockfile adulterado compromete schema ou supply chain (T/E) | alto | migration versionada com checksum, schema futuro rejeitado, lockfile/audit e revisão obrigatória |
+| T-041 | PostgreSQL indisponível causa operação sem trilha durável (D/R) | alto | startup e novo dispatch fail-closed, métrica de falha, transaction rollback; não inventar resultado em andamento |
+| T-042 | ServerInstance antiga ou SessionRecord ressuscita autoridade após restart (S/E) | crítico | UUID por processo, reconciliação antes do listen, store vivo vazio, token não persistido e novo handshake obrigatório |
+| T-043 | Replay/duplicata após restart reexecuta request conhecida (T/D) | alto | requestId durável único, nenhum redispatch no recovery, não terminais abandonadas com outcome desconhecido |
 
 ## Cenários de abuso prioritários
 
@@ -58,6 +66,7 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 4. Sessão fecha durante Job: nenhum novo lease; ação em curso segue regra explícita de cancelamento seguro e resultado tardio é marcado.
 5. Conexão cai sem `SessionClose`: estado vira `Disconnected`, mantém somente a janela do lease e depois expira; não é registrado como fechamento limpo.
 6. Server revoga enquanto poderia despachar coleta: estado terminal é aplicado antes de fechar o socket; registry remove o canal e novos requests são rejeitados.
+7. Resultado chega antes de crash mas sua transação não completa: recovery preserva incerteza como `abandoned/outcomeUnknown`, não fabrica falha nem reexecuta.
 
 ## Riscos residuais e validações futuras
 

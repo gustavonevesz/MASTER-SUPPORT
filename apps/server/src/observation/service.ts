@@ -8,6 +8,7 @@ import { MetricsRegistry } from "./metrics.js";
 import { SlidingWindowRateLimiter } from "./rate-limiter.js";
 import { ObservationReconciler, type ReconciliationEnvelope } from "./reconciler.js";
 import { terminalObservationStates, type ObservationRequestRecord, type ObservationState, type ObservationStore } from "./store.js";
+import type { DurablePersistence } from "../persistence/models.js";
 
 export const runtimeSummaryCapability = Object.freeze({ id: "system.runtime.summary", version: "1.0" });
 export type ObservationOptions = Readonly<{ timeoutMs: number; maxPayloadBytes: number; maxActivePerSession: number;
@@ -25,14 +26,41 @@ export class ObservationService {
     private readonly store: ObservationStore, private readonly clock: Clock,
     options: Partial<ObservationOptions> = {}, public readonly metrics = new MetricsRegistry(),
     public readonly audit = new InMemoryAuditStore(),
+    private readonly durability?: DurablePersistence,
   ) {
     this.options = { timeoutMs: 5_000, maxPayloadBytes: 16 * 1024, maxActivePerSession: 2, maxActivePerAgent: 2,
       maxActivePerCapability: 1, rateLimit: 5, rateWindowMs: 10_000, ...options };
     this.reconciler = new ObservationReconciler(sessions);
     this.limiter = new SlidingWindowRateLimiter(this.options.rateLimit, this.options.rateWindowMs);
+    this.metrics.setDatabaseConnected(durability?.connected ?? false);
   }
 
   public start(sessionId: string, capabilityId: string, requestedDeadline?: Date): ObservationRequestRecord {
+    const prepared = this.prepare(sessionId, capabilityId, requestedDeadline);
+    return this.dispatch(prepared.record, prepared.message);
+  }
+
+  public async startDurable(sessionId: string, capabilityId: string, requestedDeadline?: Date): Promise<ObservationRequestRecord> {
+    if (!this.durability) return this.start(sessionId, capabilityId, requestedDeadline);
+    const prepared = this.prepare(sessionId, capabilityId, requestedDeadline);
+    try {
+      await this.durability.persistObservationBeforeDispatch(prepared.record);
+      this.metrics.setDatabaseConnected(true);
+    } catch {
+      this.metrics.setDatabaseConnected(false); this.metrics.increment("db_operation_failures");
+      this.fail(prepared.record, "database_unavailable", "Durable request record could not be created before dispatch.");
+      throw new Error("database_unavailable");
+    }
+    const before = this.audit.list().length;
+    const record = this.dispatch(prepared.record, prepared.message);
+    if (terminalObservationStates.has(record.state)) {
+      try { await this.durability.persistObservation(record, this.audit.list().slice(before).at(-1)); }
+      catch { this.metrics.setDatabaseConnected(false); this.metrics.increment("db_operation_failures"); }
+    }
+    return record;
+  }
+
+  private prepare(sessionId: string, capabilityId: string, requestedDeadline?: Date): { record: ObservationRequestRecord; message: Record<string, unknown> } {
     const session = this.sessions.get(sessionId);
     if (!session || session.state !== "active") return this.rejectStart("session_not_active");
     const capability = session.capabilities.find(item => item.id === capabilityId);
@@ -57,12 +85,17 @@ export class ObservationService {
     let resolve!: (record: ObservationRequestRecord) => void;
     const promise = new Promise<ObservationRequestRecord>(done => { resolve = done; });
     const delay = Math.max(1, deadline.getTime() - now.getTime());
-    const timer = setTimeout(() => this.timeout(requestId), delay); timer.unref();
+    const timer = setTimeout(() => { if (this.durability) void this.timeoutDurable(requestId); else this.timeout(requestId); }, delay); timer.unref();
     this.pending.set(requestId, { promise, resolve, timer });
     const message = { protocolVersion: "1.0", messageId: randomUUID(), messageType: "observation.request", sessionId,
       correlationId: requestId, timestamp: now.toISOString(), payload: { requestId, capabilityId,
         capabilityVersion: capability.version, timeoutMs: this.options.timeoutMs, maxPayloadBytes: this.options.maxPayloadBytes,
         deadline: deadline.toISOString() } };
+    return { record, message };
+  }
+
+  private dispatch(record: ObservationRequestRecord, message: Record<string, unknown>): ObservationRequestRecord {
+    const { sessionId, requestId, capabilityId } = record;
     try {
       if (!this.connections.send(sessionId, message)) { this.fail(record, "connection_unavailable", "Agent connection is unavailable."); return record; }
     } catch (error) {
@@ -124,6 +157,20 @@ export class ObservationService {
     }
   }
 
+  public async handleDurable(messageType: string, raw: ObservationEnvelope): Promise<void> {
+    const previousEvents = this.audit.list().length;
+    this.handle(messageType, raw);
+    if (!this.durability) return;
+    const requestId = String((raw.payload as Record<string, unknown> | undefined)?.requestId ?? "");
+    const record = this.store.get(requestId); if (!record) return;
+    const events = this.audit.list().slice(previousEvents);
+    try {
+      await this.durability.persistObservation(record, events[0]);
+      for (const event of events.slice(1)) await this.durability.appendAudit(event);
+      this.metrics.setDatabaseConnected(true);
+    } catch { this.metrics.setDatabaseConnected(false); this.metrics.increment("db_operation_failures"); }
+  }
+
   public cancel(sessionId: string, requestId: string, reason = "requested", notifyAgent = true): ObservationRequestRecord {
     const record = this.store.get(requestId);
     if (!record || record.sessionId !== sessionId) throw new Error("unknown_request");
@@ -131,6 +178,15 @@ export class ObservationService {
     if (notifyAgent) this.sendCancel(record, reason);
     record.failure = { code: "cancelled", message: "Observation was cancelled." };
     this.transition(record, "cancelled"); this.finish(record, "observation.cancelled");
+    return record;
+  }
+
+  public async cancelDurable(sessionId: string, requestId: string, reason = "requested", notifyAgent = true): Promise<ObservationRequestRecord> {
+    const before = this.audit.list().length; const record = this.cancel(sessionId, requestId, reason, notifyAgent);
+    if (this.durability) {
+      try { await this.durability.persistObservation(record, this.audit.list().slice(before)[0]); this.metrics.setDatabaseConnected(true); }
+      catch { this.metrics.setDatabaseConnected(false); this.metrics.increment("db_operation_failures"); throw new Error("database_unavailable"); }
+    }
     return record;
   }
 
@@ -146,10 +202,27 @@ export class ObservationService {
     }
   }
 
+  public async authorityLostDurable(sessionId: string, reason: "session_revoked" | "session_closed" | "session_expired" | "disconnected"): Promise<void> {
+    const before = this.audit.list().length; this.authorityLost(sessionId, reason);
+    if (!this.durability) return;
+    const records = this.store.listForSession(sessionId).filter(item => terminalObservationStates.has(item.state));
+    const events = this.audit.list().slice(before);
+    try {
+      for (const record of records) await this.durability.persistObservation(record, events.find(event => event.requestId === record.requestId));
+      this.metrics.setDatabaseConnected(true);
+    } catch { this.metrics.setDatabaseConnected(false); this.metrics.increment("db_operation_failures"); }
+  }
+
   public expireDueRequests(): readonly ObservationRequestRecord[] {
     const expired = this.store.list().filter(record => !terminalObservationStates.has(record.state) &&
       new Date(record.deadline).getTime() <= this.clock.now().getTime());
     for (const record of expired) this.timeout(record.requestId);
+    return expired;
+  }
+  public async expireDueRequestsDurable(): Promise<readonly ObservationRequestRecord[]> {
+    const expired = this.store.list().filter(record => !terminalObservationStates.has(record.state) &&
+      new Date(record.deadline).getTime() <= this.clock.now().getTime());
+    for (const record of expired) await this.timeoutDurable(record.requestId);
     return expired;
   }
   public activeCount(): number { return this.store.list().filter(record => !terminalObservationStates.has(record.state)).length; }
@@ -158,6 +231,12 @@ export class ObservationService {
     const record = this.store.get(requestId); if (!record || terminalObservationStates.has(record.state)) return;
     this.sendCancel(record, "deadline_exceeded"); record.failure = { code: "timeout", message: "Observation deadline expired." };
     this.transition(record, "timed_out"); this.finish(record, "observation.timed_out");
+  }
+  private async timeoutDurable(requestId: string): Promise<void> {
+    const before = this.audit.list().length; this.timeout(requestId);
+    const record = this.store.get(requestId); if (!record || !this.durability) return;
+    try { await this.durability.persistObservation(record, this.audit.list().slice(before).at(-1)); this.metrics.setDatabaseConnected(true); }
+    catch { this.metrics.setDatabaseConnected(false); this.metrics.increment("db_operation_failures"); }
   }
   private sendCancel(record: ObservationRequestRecord, reason: string): void {
     try { this.connections.send(record.sessionId, { protocolVersion: "1.0", messageId: randomUUID(), messageType: "observation.cancel",

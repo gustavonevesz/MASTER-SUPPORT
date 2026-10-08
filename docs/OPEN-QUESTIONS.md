@@ -11,7 +11,7 @@ Estas questões podem alterar segurança, protocolo ou modelo; não devem ser re
 | OQ-005 | Quais capabilities compõem o Preflight mínimo sem coletar dados pessoais/segredos em excesso? | privacidade e diagnóstico | primeira fatia |
 | OQ-006 | Como verificar evidência produzida por endpoint potencialmente comprometido? | confiança do diagnóstico | antes de endpoints gerenciados; baseline agora |
 | OQ-007 | Quem pode aprovar R2/R3/R4, quando há segregação de funções e qual step-up é exigido? | modelo de autoridade | antes de ações mutáveis |
-| OQ-008 | Qual classificação, retenção, redaction e residência de evidências/stdout/auditoria? | segurança, LGPD e custo | antes de persistir dados reais |
+| OQ-008 | Qual retenção, expurgo, arquivamento, residência e acesso definitivos para Observation minimizada, EvidenceMetadata e auditoria? Evidence RAW continua fora do banco. | segurança, LGPD e custo | antes do piloto |
 | OQ-009 | Qual janela mínima de versões compatíveis deve ser suportada além da regra additive-first do protocolo 1.0? | rollout seguro | antes do primeiro rollout de Agent |
 | OQ-010 | O processo PowerShell separado, hipótese inicial do spike documental, atende cancelamento, encoding, módulos e custo de startup medidos? | segurança, timeout e estabilidade | spike executável antes da primeira capability |
 | OQ-011 | Como armazenar auditoria com resistência proporcional a administrador/servidor comprometido? | não repúdio e investigação | desenho de persistência |
@@ -22,5 +22,7 @@ Estas questões podem alterar segurança, protocolo ou modelo; não devem ser re
 | OQ-016 | Resolvida na ADR-010: disconnect abandona requests aceitas/em execução com outcome desconhecido; terminais não reabrem e resume não reexecuta. | evita estado falso e reexecução acidental | FOUNDATION-004 |
 | OQ-017 | Resolvida para o runtime único: 2 ativas por Session/Agent, 1 por capability e 5 disparos por Session/capability em 10 s, todos configuráveis. Limites distribuídos continuam pendentes. | servidor abusivo e resource exhaustion | FOUNDATION-004 |
 | OQ-018 | Qual parte de uma Observation factual pode ser exposta além do endpoint dev-only sem revelar Evidence RAW? | minimização, acesso e futura UI | antes de qualquer UI/persistência |
-| OQ-019 | Como persistir e reconciliar atomicamente Session, Observation e Audit após crash sem transformar outcome desconhecido em reexecução? | consistência, replay e recuperação | FOUNDATION-005 |
+| OQ-019 | Resolvida na ADR-011: transações locais no PostgreSQL, persist-before-dispatch e restart conservador sem restaurar autoridade/reexecutar. A janela PostgreSQL↔WebSocket permanece explicitamente at-least-uncertain. | consistência, replay e recuperação | FOUNDATION-005 |
 | OQ-020 | Qual tolerância de clock e fonte de tempo serão exigidas fora do ambiente local? | deadline e rejeição tardia entre hosts | antes do piloto |
+| OQ-021 | Qual política operacional de backup/restore, rotação de credenciais, TLS do PostgreSQL, HA e recovery point/time será exigida? | disponibilidade e confidencialidade do System of Record | antes do piloto |
+| OQ-022 | Como tornar auditoria resistente a adulteração além do append-only comportamental da aplicação? | investigação e não repúdio | antes de requisitos regulatórios/piloto |

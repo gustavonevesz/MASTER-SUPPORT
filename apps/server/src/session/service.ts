@@ -20,7 +20,7 @@ export class SessionService {
     public readonly options: SessionOptions,
   ) {}
 
-  public create(hello: AgentHello): Session {
+  public create(hello: AgentHello, activate = true): Session {
     const now = this.clock.now();
     const supported = new Map(this.options.supportedCapabilities.map(capability => [`${capability.id}@${capability.version}`, capability]));
     const negotiated = hello.payload.supportedCapabilities
@@ -34,12 +34,19 @@ export class SessionService {
       createdAt: now,
       lastSeenAt: now,
       expiresAt: new Date(now.getTime() + this.options.leaseDurationMs),
-      state: "active",
+      state: activate ? "active" : "connecting",
       resumeToken: randomBytes(32).toString("base64url"),
       processedMessageIds: new Set(),
       messageOrder: [],
     };
     this.store.save(session);
+    return session;
+  }
+
+  public activate(sessionId: string): Session {
+    const session = this.store.get(sessionId);
+    if (!session || session.state !== "connecting") throw new Error("session_not_connecting");
+    session.state = "active";
     return session;
   }
 

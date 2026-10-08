@@ -23,6 +23,13 @@ test("creates an active development session without Asset identity", () => {
   assert.ok(session.resumeToken.length >= 32);
 });
 
+test("durable handshake keeps a new session without authority until persistence completes", () => {
+  const { service } = setup(); const session = service.create(createAgentHello(), false);
+  assert.equal(session.state, "connecting");
+  assert.throws(() => service.heartbeat(session.id, crypto.randomUUID()), /session_not_active/);
+  assert.equal(service.activate(session.id), session); assert.equal(session.state, "active");
+});
+
 test("heartbeat renews lease and duplicate does not process twice", () => {
   const { service, clock } = setup();
   const session = service.create(createAgentHello());

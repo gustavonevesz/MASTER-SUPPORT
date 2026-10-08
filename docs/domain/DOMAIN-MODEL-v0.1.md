@@ -24,8 +24,10 @@ Status: conceitual. Cardinalidades, campos e agregados serão validados por caso
 | Approval | Consentimento específico, limitado e expirável para uma Action imutável em determinado contexto. | núcleo |
 | RiskLevel | Classificação conceitual R0–R4; não é autorização por si só. | provisório |
 | AuditEvent | Evento append-only de segurança/operação com ator, ação, alvo, correlação, tempo e resultado. | núcleo |
+| ServerInstance | Execução concreta do Control Plane, com UUID novo por startup e `startedAt/endedAt`; não é membership de cluster. | implementado |
+| SessionRecord | Histórico durável de uma Session e de seu encerramento; não contém conexão, lease, token nem autoridade. | implementado |
 
-Na FOUNDATION-004, `ObservationRequest` continua um caso de uso operacional transitório, não um Job nem uma entidade persistida. Referencia Session e Capability negociada, possui `requestId`, deadline e lifecycle `created/accepted/executing/completed|failed|timed_out|cancelled|abandoned`. `outcomeUnknown` qualifica abandono quando o Server não pode afirmar se houve execução. Evidence e Observation aceitas são guardadas somente em memória; reinício perde todo esse estado por desenho.
+Na FOUNDATION-005, `ObservationRequest` continua um caso de uso operacional, não um Job, mas seu histórico mínimo agora é persistido. Referencia SessionRecord, ServerInstance e Capability negociada, possui `requestId`, deadline e lifecycle `created/accepted/executing/completed|failed|timed_out|cancelled|abandoned`. `outcomeUnknown` durável qualifica abandono quando o Server não pode afirmar se houve execução. Evidence continua RAW e efêmera; somente EvidenceMetadata e a Observation determinística minimizada são persistidas.
 
 ## Relações principais
 
@@ -63,6 +65,8 @@ erDiagram
 - **Execution outcome ≠ Reconciled outcome:** o Agent pode produzir um resultado que o Server rejeita ou classifica como tardio por perda de autoridade.
 - **Reconciliation ≠ Verification:** reconciliação valida pertencimento, correlação e autoridade do resultado; verificação avalia o objetivo operacional.
 - **Asset ≠ Endpoint observado ≠ AgentInstance ≠ Session:** um agente temporário pode abrir nova Session para o mesmo Asset; um endpoint observado pode permanecer não confirmado e não deve receber identidade confiável automaticamente.
+- **Live Session ≠ SessionRecord:** apenas a primeira possui socket, lease, heartbeat, token e autoridade; o registro durável é histórico e jamais revive a primeira.
+- **ServerInstance ≠ Control Plane cluster:** identifica qual processo detinha autoridade e permite reconciliação; não implementa eleição ou membership.
 
 ## Invariantes
 
@@ -75,7 +79,9 @@ erDiagram
 7. Correlação ou reconciliação de Endpoint observado com Asset preserva fonte, confiança e histórico; não cria confirmação implícita.
 8. Estado terminal de ObservationRequest não reabre e resume não reexecuta request antiga automaticamente.
 9. Ausência de resultado não prova ausência de execução; outcome desconhecido permanece explícito.
+10. Restart cria nova ServerInstance, encerra registros vivos anteriores e não recria Session nem redispara ObservationRequest.
+11. Evidence RAW não é persistida por padrão; Observation `MINIMIZED` não é implicitamente `AI-SAFE`.
 
 ## Ainda não decidido
 
-Agregados transacionais, semântica exata de identidade de Asset, cardinalidade Incident–Session, enumerações finais, retenção, formato de evidências grandes e fronteira entre Action/Job serão fechados por exemplos na FOUNDATION-001, sem criar tabelas prematuramente.
+Semântica exata de identidade de Asset, cardinalidade Incident–Session, enumerações finais, retenção/expurgo, formato de evidências grandes e fronteira entre Action/Job continuam abertos. As transações da FOUNDATION-005 cobrem somente invariantes locais do backbone de Observation descritas na ADR-011.

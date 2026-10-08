@@ -29,6 +29,20 @@ try {
     Write-Host '== Dependency audit =='
     Invoke-Checked npm audit
 
+    Write-Host '== PostgreSQL test environment and migrations =='
+    if (-not $env:MASTER_SUPPORT_TEST_DATABASE_URL) {
+        throw 'MASTER_SUPPORT_TEST_DATABASE_URL is required and must target the isolated master_support_test database.'
+    }
+    Invoke-Checked npm run db:validate-test
+    $previousDatabaseUrl = $env:MASTER_SUPPORT_DATABASE_URL
+    try {
+        $env:MASTER_SUPPORT_DATABASE_URL = $env:MASTER_SUPPORT_TEST_DATABASE_URL
+        Invoke-Checked npm run db:migrate
+    }
+    finally {
+        $env:MASTER_SUPPORT_DATABASE_URL = $previousDatabaseUrl
+    }
+
     Write-Host '== .NET restore/build/tests =='
     Invoke-Checked dotnet restore apps/agent/test/MasterSupport.Agent.Tests.csproj
     Invoke-Checked dotnet build apps/agent/src/MasterSupport.Agent.csproj --no-restore --configuration Debug
@@ -40,7 +54,7 @@ try {
     Write-Host '== Repository checks =='
     Invoke-Checked git diff --check
 
-    Write-Host 'FOUNDATION-004 verification succeeded.'
+    Write-Host 'FOUNDATION-005 verification succeeded.'
 }
 finally {
     Pop-Location

@@ -10,6 +10,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "dev": "tsx src/main.ts",
+    "db:migrate": "tsx src/persistence/migrate-cli.ts",
+    "db:validate-test": "tsx src/persistence/validate-test-database-cli.ts",
     "test": "node --import tsx --test test/*.test.ts ../../tests/integration/*.test.ts ../../tests/spikes/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -18,10 +20,12 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "fastify": "5.12.5",
+    "pg": "^8.16.3",
     "ws": "8.22.0"
   },
   "devDependencies": {
     "@types/node": "24.7.0",
+    "@types/pg": "^8.15.5",
     "@types/ws": "8.18.2",
     "tsx": "4.20.6",
     "typescript": "5.9.3"

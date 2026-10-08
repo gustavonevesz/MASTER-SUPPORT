@@ -29,9 +29,9 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 | Conteúdo e metadados de e-mail | altamente sensíveis; não coletar por padrão; conteúdo exige caso, autoridade e controles específicos |
 | Dados pessoais | minimizar, registrar finalidade, restringir acesso e aplicar decisões organizacionais/LGPD futuras |
 | Dados internos da Master Health | classificar conforme política corporativa ainda a definir; deny by default para exportação e IA |
-| `system.runtime.summary` | Evidence `RAW` mesmo contendo somente plataforma/runtime; store efêmero em memória, máximo 16 KiB, sem IA e sem payload em logs/consulta sanitizada |
-| Resultado tardio | descartar o payload/Evidence RAW; manter no máximo IDs, tipo, instante, tamanho e motivo sanitizados em memória |
-| Métricas e AuditEvents da Observation | somente contagens, estado, IDs técnicos, capability, duração, tamanho e motivo; nunca payload, hostname, usuário, token ou Evidence RAW |
+| `system.runtime.summary` | Evidence `RAW` efêmera, máximo 16 KiB; PostgreSQL recebe só EvidenceMetadata e nove fatos allowlisted na Observation `MINIMIZED`; sem IA e sem RAW em logs/consulta |
+| Resultado tardio | descartar o payload/Evidence RAW; persistir no máximo AuditEvent com IDs, tipo, instante, tamanho e motivo sanitizados |
+| Métricas e AuditEvents da Observation | somente contagens, estado, IDs técnicos, capability, duração, tamanho e motivo; AuditEvent durável nunca contém payload, hostname, usuário, token ou Evidence RAW |
 
 ## Regras iniciais
 
@@ -45,6 +45,9 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 8. Logs de Observation usam somente `sessionId`, `requestId`, capability, estado, duração, IDs e `payloadSize`; o conteúdo RAW permanece separado.
 9. Reconciliation valida metadados antes de qualquer armazenamento do payload; resultado tardio ou rejeitado não cria Evidence.
 10. Limites são aplicados antes de armazenamento e logging. Payload excessivo é rejeitado, nunca truncado e apresentado como completo.
+11. `MINIMIZED` descreve redução determinística para persistência; não equivale a `REDACTED` nem `AI-SAFE` e não autoriza envio futuro a LLM.
+12. Connection strings e credenciais PostgreSQL são configuração externa secreta: não entram em repositório, logs ou AuditEvents.
+13. Nenhum purge automático existe nesta etapa. Retenção, expurgo, arquivamento, backup e residência dependem de política organizacional explícita.
 
 ## Decisões organizacionais pendentes
 

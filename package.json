@@ -14,6 +14,8 @@
     "build": "npm run build --workspace @master-support/server",
     "test": "npm run test --workspace @master-support/server",
     "typecheck": "npm run typecheck --workspace @master-support/server",
+    "db:migrate": "npm run db:migrate --workspace @master-support/server",
+    "db:validate-test": "npm run db:validate-test --workspace @master-support/server",
     "verify:ts": "npm run typecheck && npm run build && npm test"
   }
 }

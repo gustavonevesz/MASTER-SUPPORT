@@ -8,13 +8,14 @@ import { FakeClock } from "../src/session/clock.js";
 import { SessionService } from "../src/session/service.js";
 import { InMemorySessionStore } from "../src/session/store.js";
 import type { MessageTransport } from "../src/transport/message-transport.js";
+import type { DurablePersistence } from "../src/persistence/models.js";
 
 class FakeTransport implements MessageTransport {
   public state = "open" as const; public readonly sent: Record<string, any>[] = []; public closed = false; public rejectSend = false;
   public send(message: unknown): void { if (this.rejectSend) throw new Error("backpressure_limit"); this.sent.push(message as Record<string, any>); }
   public close(): void { this.closed = true; } public onMessage(): void {} public onClose(): void {}
 }
-function setup(options: Partial<ObservationOptions> = {}) {
+function setup(options: Partial<ObservationOptions> = {}, durability?: DurablePersistence) {
   const clock = new FakeClock(new Date("2026-10-06T12:00:00Z")); const sessionsStore = new InMemorySessionStore();
   const sessions = new SessionService(sessionsStore, clock, { leaseDurationMs: 10_000, heartbeatIntervalMs: 1_000,
     deduplicationCapacity: 10, supportedCapabilities: [runtimeSummaryCapability] });
@@ -23,7 +24,7 @@ function setup(options: Partial<ObservationOptions> = {}) {
   const connections = new ActiveConnectionRegistry(); const transport = new FakeTransport(); connections.register(session.id, transport);
   const store = new InMemoryObservationStore();
   const observations = new ObservationService(sessionsStore, connections, store, clock,
-    { timeoutMs: 5_000, maxPayloadBytes: 16 * 1024, rateLimit: 100, ...options });
+    { timeoutMs: 5_000, maxPayloadBytes: 16 * 1024, rateLimit: 100, ...options }, undefined, undefined, durability);
   return { clock, session, sessionsStore, sessions, connections, transport, store, observations };
 }
 function resultPayload(requestId: string, marker = "Windows", capabilityId: string = runtimeSummaryCapability.id) {
@@ -151,3 +152,18 @@ test("small deterministic load cleans active registry and restart loses state", 
   assert.equal(fixture.observations.activeCount(), 0); assert.equal(fixture.store.list().length, 20);
   assert.equal(new InMemoryObservationStore().list().length, 0);
 });
+
+test("database failure before durable insert prevents dispatch", async () => {
+  const durability = failingDurability(); const fixture = setup({}, durability);
+  await assert.rejects(fixture.observations.startDurable(fixture.session.id, runtimeSummaryCapability.id), /database_unavailable/);
+  assert.equal(fixture.transport.sent.length, 0); assert.equal(fixture.store.list()[0]?.state, "failed");
+  assert.equal(fixture.observations.metrics.snapshot(1, 0).db_operation_failures, 1);
+});
+
+function failingDurability(): DurablePersistence { return {
+  serverInstanceId: crypto.randomUUID(), connected: false,
+  async persistSessionCreated() {}, async persistSessionState() {},
+  async persistObservationBeforeDispatch() { throw new Error("database_unavailable"); }, async persistObservation() {},
+  async appendAudit() {}, async sessionHistory() { return undefined; }, async observationHistory() { return undefined; },
+  async reconcileRestart() { return { sessions: 0, observations: 0 }; }, async finish() {},
+}; }

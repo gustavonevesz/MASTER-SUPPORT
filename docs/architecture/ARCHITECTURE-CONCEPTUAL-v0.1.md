@@ -81,7 +81,7 @@ WebSocket é o adapter Trial da FOUNDATION-002, conforme ADR-009. O proxy local 
 
 ## Backbone temporário implementado
 
-O Control Plane mantém `Session` apenas em `InMemorySessionStore`. A conexão começa sem autoridade; `AgentHello` válido cria Session `Active` e `ServerHello` entrega lease, intervalo e resume token dev-only. Heartbeat válido renova `lastSeenAt/expiresAt`; queda muda para `Disconnected`; resume exige Session válida, AgentInstance correspondente e token em memória. `Closed`, `Expired` e `Revoked` são terminais.
+O Control Plane mantém a `Session` viva em `InMemorySessionStore`; PostgreSQL recebe uma `SessionRecord` histórica que nunca concede autoridade. A conexão começa sem autoridade; `AgentHello` válido só cria Session `Active` após persistir seu registro, e `ServerHello` entrega lease, intervalo e resume token dev-only. Heartbeat válido renova `lastSeenAt/expiresAt`; queda muda para `Disconnected`; resume exige Session viva, AgentInstance correspondente e token em memória. `Closed`, `Expired` e `Revoked` são terminais. Token, socket e objetos de cancelamento nunca são persistidos.
 
 ```mermaid
 stateDiagram-v2
@@ -110,7 +110,17 @@ O Agent mantém registry bounded das operações ativas e cache bounded dos desf
 
 Evidence contém o payload coletado e sua procedência como `RAW`; Observation contém a afirmação factual determinística sustentada por aquela Evidence. Logs carregam apenas IDs, estado, duração e tamanho. A consulta dev-only omite o payload RAW. Um futuro Job poderá orquestrar uma Capability em nome de Action/policy, mas não substitui Evidence/Observation e não foi criado nesta etapa.
 
-Os limites default, configuráveis, são 2 requests ativas por Session e Agent, 1 por capability e 5 inícios por Session/capability em 10 segundos. Não há fila ilimitada. O transporte limita mensagem a 64 KiB e buffers de saída são bounded; pressão excessiva fecha o canal explicitamente. Métricas e AuditEvents em memória registram apenas metadados.
+Os limites default, configuráveis, são 2 requests ativas por Session e Agent, 1 por capability e 5 inícios por Session/capability em 10 segundos. Não há fila ilimitada. O transporte limita mensagem a 64 KiB e buffers de saída são bounded; pressão excessiva fecha o canal explicitamente. Métricas registram apenas metadados; AuditEvents relevantes também são persistidos sem RAW.
+
+## Durabilidade e restart da FOUNDATION-005
+
+Cada inicialização cria uma `ServerInstance` distinta. Antes de aceitar conexões, o Server valida configuração/schema, registra a instância e reconcilia Sessions sem término e requests não terminais deixadas por instâncias anteriores. A Session histórica vira `interrupted/server_restart`; a request vira `abandoned` com `outcomeUnknown=true`. Nada desse histórico é carregado no store de autoridade e não existe redispatch automático.
+
+PostgreSQL é o System of Record de `ServerInstance`, `SessionRecord`, `ObservationRequest`, Observation minimizada, `EvidenceMetadata` e `AuditEvent`. Evidence RAW nunca é gravada. Os fatos persistidos de `system.runtime.summary` são uma allowlist determinística marcada `MINIMIZED`, classificação que não autoriza uso por IA.
+
+A fronteira PostgreSQL/WebSocket não é atômica. O registro da request e seu AuditEvent são commitados antes do dispatch; resultado aceito, EvidenceMetadata, Observation e AuditEvent são commitados juntos. Uma queda entre commit e envio deixa uma tentativa histórica sem execução comprovada; uma queda após possível execução mas antes do commit deixa outcome desconhecido. Em ambos os casos o restart abandona conservadoramente, nunca presume falha e nunca reexecuta. Falha de banco bloqueia startup e novo dispatch.
+
+Índices cobrem Sessions abertas por ServerInstance, requests por Session/tempo, requests ativas por ServerInstance, Observations por tempo e auditoria por Session/request e tempo. Não há purge automático; retenção, arquivamento e LGPD continuam abertos.
 
 ## Estados mínimos
 

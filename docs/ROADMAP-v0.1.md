@@ -30,11 +30,15 @@ Status: concluída no commit `e545199`. Inclui revogação proativa do canal, re
 
 ## FOUNDATION-004 — Observation Hardening & Reconciliation
 
-Status: implementada, aguardando gate de revisão. Consolidou a espinha de observação com cancelamento por autoridade, registry ativo limitado, estados terminais imutáveis, resultado tardio sem RAW, outcome desconhecido após queda, deadline, quotas, rate limit, backpressure, métricas/auditoria sanitizadas e spike de proxy local. WebSocket permanece Trial e todo estado continua volátil.
+Status: concluída no commit `49a33e7`. Consolidou a espinha de observação com cancelamento por autoridade, registry ativo limitado, estados terminais imutáveis, resultado tardio sem RAW, outcome desconhecido após queda, deadline, quotas, rate limit, backpressure, métricas/auditoria sanitizadas e spike de proxy local. WebSocket permanece Trial.
 
 ## FOUNDATION-005 — Durable Observation State & Restart Reconciliation
 
-Próxima etapa recomendada: persistir de forma transacional o mínimo de Session/Observation/Audit, definir migrations e retenção, e reconciliar restart sem reenviar automaticamente requests cujo outcome seja desconhecido. Deve provar crash/restart e idempotência entre store e transporte, sem nova capability, PowerShell, ação mutável, Job completo, Preflight, IA ou UI.
+Status: implementada, aguardando gate de revisão. PostgreSQL real guarda ServerInstance, SessionRecord, ObservationRequest, Observation minimizada, EvidenceMetadata e AuditEvent. Migrations SQL são explícitas; startup e novas operações falham fechados sem durabilidade. Restart normal/crash preserva histórico, encerra autoridade antiga e reconcilia requests incertas como `abandoned/outcomeUnknown`, sem redispatch. Retenção permanece aberta e Evidence RAW não é persistida.
+
+## FOUNDATION-006 — Production Session Trust Bootstrap
+
+Próxima etapa recomendada: substituir o handshake e resume dev-only por bootstrap autenticado de Support Session, credenciais curtas e revogáveis, TLS validado, proteção contra replay e vínculo explícito entre técnico, sessão e AgentInstance. Deve manter uma única capability R0, sem Job, PowerShell, ação mutável, UI ou Agent persistente.
 
 ## VERTICAL-001 — Read-only Preflight
 

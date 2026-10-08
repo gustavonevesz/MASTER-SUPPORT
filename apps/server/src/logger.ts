@@ -7,6 +7,7 @@ export function logEvent(
     messageId?: string; correlationId?: string; sessionId?: string; agentInstanceId?: string;
     requestId?: string; capabilityId?: string; status?: string; durationMs?: number;
     evidenceId?: string; observationId?: string; payloadSize?: number;
+    serverInstanceId?: string; restartSessions?: number; restartObservations?: number;
   } = {},
 ): void {
   process.stdout.write(`${JSON.stringify({

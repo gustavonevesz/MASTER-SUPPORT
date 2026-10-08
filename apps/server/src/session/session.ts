@@ -1,6 +1,6 @@
 import type { CapabilityDescriptor } from "../contracts.js";
 
-export type SessionState = "active" | "disconnected" | "closed" | "expired" | "revoked";
+export type SessionState = "connecting" | "active" | "disconnected" | "closed" | "expired" | "revoked";
 
 export type Session = {
   readonly id: string;
