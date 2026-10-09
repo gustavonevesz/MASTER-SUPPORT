@@ -96,9 +96,9 @@ public sealed class ObservationProcessor
                 if (now > deadline) throw new OperationCanceledException(cancellation.Token);
                 var evidenceId = Guid.NewGuid(); var observationId = Guid.NewGuid();
                 var resultPayload = new { requestId, evidence = new { evidenceId, capabilityId, capabilityVersion, collectedAt = now,
-                    source = "agent.native-runtime-api", dataHandlingState = "RAW", payload = collected },
-                    observation = new { observationId, evidenceId, observedAt = now, kind = "runtime-summary-collected",
-                      statement = "The temporary Agent runtime has the reported platform and architecture properties.", facts = collected } };
+                    source = registration.Source, dataHandlingState = "RAW", payload = collected },
+                    observation = new { observationId, evidenceId, observedAt = now, kind = registration.ObservationKind,
+                      statement = registration.Statement, facts = collected } };
                 var maxPayloadBytes = payload.GetProperty("maxPayloadBytes").GetInt32();
                 if (Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(resultPayload, ContractService.SerializerOptions)) > maxPayloadBytes)
                 {
@@ -122,6 +122,10 @@ public sealed class ObservationProcessor
                     StructuredLog.WriteObservation("info", "observation.cancelled", currentSessionId, requestId, capabilityId, "cancelled");
                 }
                 else await CompleteFailureAsync(currentSessionId, requestId, "timeout", "Observation handler timed out.", transport, CancellationToken.None);
+            }
+            catch (UnsupportedPlatformException)
+            {
+                await CompleteFailureAsync(currentSessionId, requestId, "unsupported_platform", "Capability requires Windows.", transport, CancellationToken.None);
             }
             catch (Exception)
             {

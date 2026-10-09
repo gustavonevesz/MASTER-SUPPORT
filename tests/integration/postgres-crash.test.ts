@@ -38,7 +38,7 @@ test("real crash after result arrival reconciles durable uncertainty without res
     socket.send(JSON.stringify({ protocolVersion: "1.0", messageId: crypto.randomUUID(), messageType: "observation.result",
       sessionId, correlationId: requestId, timestamp: new Date().toISOString(), payload: { requestId,
         evidence: { evidenceId, capabilityId: "system.runtime.summary", capabilityVersion: "1.0", collectedAt: new Date().toISOString(),
-          source: "agent.native-runtime-api", dataHandlingState: "RAW", payload: runtimeFacts() },
+          source: "agent.dotnet.runtime", dataHandlingState: "RAW", payload: runtimeFacts() },
         observation: { observationId: crypto.randomUUID(), evidenceId, observedAt: new Date().toISOString(),
           kind: "runtime-summary-collected", statement: "The temporary Agent runtime has the reported platform and architecture properties.",
           facts: runtimeFacts() } } }));

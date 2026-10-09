@@ -32,7 +32,7 @@ function resultPayload(requestId: string, marker = "Windows", capabilityId: stri
   const runtime = { osPlatform: marker, osDescription: "Windows", osArchitecture: "x64", processArchitecture: "x64",
     dotnetRuntime: ".NET 10", agentVersion: "0.1.0", productVersion: "0.1.0", protocolVersion: "1.0", supportSessionMode: "temporary-development" };
   return { requestId, evidence: { evidenceId, capabilityId, capabilityVersion: "1.0", collectedAt: new Date().toISOString(),
-    source: "agent.native-runtime-api", dataHandlingState: "RAW", payload: runtime }, observation: {
+    source: "agent.dotnet.runtime", dataHandlingState: "RAW", payload: runtime }, observation: {
       observationId: crypto.randomUUID(), evidenceId, observedAt: new Date().toISOString(), kind: "runtime-summary-collected",
       statement: "The temporary Agent runtime has the reported platform and architecture properties.", facts: runtime } };
 }
@@ -165,5 +165,6 @@ function failingDurability(): DurablePersistence { return {
   async persistSessionCreated() {}, async persistSessionState() {},
   async persistObservationBeforeDispatch() { throw new Error("database_unavailable"); }, async persistObservation() {},
   async appendAudit() {}, async sessionHistory() { return undefined; }, async observationHistory() { return undefined; },
+  async persistPreflightStarted(){},async persistPreflightFinished(){},async preflightHistory(){return undefined;},async listPreflightHistory(){return[];},
   async reconcileRestart() { return { sessions: 0, observations: 0 }; }, async finish() {},
 }; }

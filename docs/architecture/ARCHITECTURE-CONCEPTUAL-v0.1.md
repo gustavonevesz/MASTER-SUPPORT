@@ -1,5 +1,11 @@
 # Arquitetura conceitual v0.1
 
+## Preflight read-only implementado
+
+O `PreflightService` do Control Plane orquestra sequencialmente as cinco capabilities R0 negociadas usando o Observation Backbone existente. `Completed` exige cinco Observations válidas; `Partial` exige ao menos uma; `Failed` não possui nenhuma; perda de autoridade produz `Cancelled`. Restart converte execução antiga em `Interrupted` e nunca redispara trabalho.
+
+O snapshot não duplica Evidence: referencia ObservationIds e versões. `ObservedEndpoint` é criado/reutilizado somente dentro da mesma Session; duas Sessions com o mesmo hostname geram entidades distintas. O Agent usa handlers fechados, sem parâmetros executáveis, e provenance específica para runtime/OS, memória, storage e security context.
+
 ## Trust bootstrap operacional
 
 O Control Plane persiste SupportInvitation (hash e metadados) no PostgreSQL e mantém ConnectionTicket/ResumeTicket somente em memória. HTTPS consome o convite atomicamente; WSS consome um ticket no header Authorization antes de criar autoridade. Cada resume consome e gira o ticket. Revogação/expiração encerram a autoridade, e restart nunca reconstitui Session ou tickets a partir do histórico. Asset, Endpoint, AgentInstance, SupportInvitation, Session e ServerInstance são limites distintos.
@@ -104,7 +110,7 @@ Deduplicação é at-most-once apenas para processamento semântico dentro da ja
 
 ## Backbone de observação read-only implementado
 
-`AgentHello` oferece somente `system.runtime.summary@1.0` e a Session guarda apenas a interseção com o catálogo do Server. Uma registry explícita no Agent associa ID/versão a descriptor R0, `ReadOnly`, `RequiresAdmin=false` e handler C# concreto; texto executável, reflection e seleção de tipo/método não atravessam o protocolo.
+`AgentHello` oferece as cinco capabilities do Preflight e a Session guarda apenas a interseção com o catálogo do Server. Uma registry explícita no Agent associa ID/versão a descriptor R0, `ReadOnly`, `RequiresAdmin=false` e handler C# concreto; texto executável, reflection e seleção de tipo/método não atravessam o protocolo.
 
 O Server cria `ObservationRequest` somente para Session `Active` e capability negociada. `requestId` identifica a operação e permanece distinto dos `messageId`; `correlationId=requestId` reúne request, aceite e desfecho. O lifecycle em memória é `created → accepted → executing → completed|failed|timed_out|cancelled|abandoned`; terminais não reabrem. `outcomeUnknown=true` qualifica abandono quando execução e entrega podem ter cruzado uma queda.
 

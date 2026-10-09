@@ -21,7 +21,8 @@ test("empty database migrates, reapplies idempotently, and rejects a future sche
     await migrate(pool); await migrate(pool);
     const tables = await pool.query<{ tablename: string }>("SELECT tablename FROM pg_tables WHERE schemaname=current_schema() ORDER BY tablename");
     assert.deepEqual(tables.rows.map(row => row.tablename), ["audit_events", "evidence_metadata", "observation_requests",
-      "observations", "schema_migrations", "server_instances", "session_records", "support_invitations"]);
+      "observations", "observed_endpoints", "preflight_observations", "preflight_runs", "preflight_snapshots",
+      "schema_migrations", "server_instances", "session_records", "support_invitations"]);
     await pool.query("INSERT INTO schema_migrations(version,name,checksum) VALUES($1,$2,$3)", [999, "future.sql", "future"]);
     await assert.rejects(migrate(pool), /database_schema_is_newer/);
     await assert.rejects(PostgresPersistence.start(url), /database_schema_version_mismatch/);
@@ -81,6 +82,21 @@ test("restart reconciliation abandons prior work, interrupts historical Session,
     assert.equal(sessionHistory?.["historical_status"], "interrupted"); assert.equal(sessionHistory?.["end_reason"], "server_restart");
     assert.equal(observation?.["state"], "abandoned"); assert.equal(observation?.["outcome_unknown"], true);
     assert.equal(observation?.["failure_code"], "server_restart");
+  } finally { await first.finish(); await second.finish(); }
+}));
+
+test("restart interrupts an in-flight Preflight without snapshot or automatic reexecution", async () => isolated(async url => {
+  const first = await PostgresPersistence.start(url); const session = makeSession();
+  await first.persistSessionCreated(session);
+  const preflightRunId=crypto.randomUUID(); await first.persistPreflightStarted({preflightRunId,sessionId:session.id,
+    createdAt:new Date().toISOString(),startedAt:new Date().toISOString(),status:"running",capabilityFailureCount:0,
+    requestIds:[],observationIds:[],capabilityResults:[]});
+  const second=await PostgresPersistence.start(url);
+  try { await second.reconcileRestart(); const history=await second.preflightHistory(preflightRunId);
+    assert.equal(history?.["status"],"interrupted");assert.equal(history?.["captured_at"],null);const runs=await second.listPreflightHistory(session.id);
+    assert.equal(runs.length,1);assert.equal(runs[0]?.["status"],"interrupted");
+    const pool=new Pool({connectionString:url});try{const count=await pool.query<{count:string}>("SELECT count(*)::text AS count FROM preflight_runs WHERE session_id=$1",[session.id]);assert.equal(count.rows[0]?.count,"1");}
+    finally{await pool.end();}
   } finally { await first.finish(); await second.finish(); }
 }));
 
@@ -187,7 +203,7 @@ function complete(record: ObservationRequestRecord, secret?: string): void { con
   agentVersion: "0.1.0", productVersion: "0.1.0", protocolVersion: "1.0", supportSessionMode: "temporary-development", secret };
   record.state = "completed"; record.completedAt = new Date().toISOString(); record.durationMs = 1;
   record.evidence = { evidenceId, capabilityId: record.capabilityId, capabilityVersion: record.capabilityVersion,
-    collectedAt: new Date().toISOString(), source: "agent.native-runtime-api", dataHandlingState: "RAW", payload: facts };
+    collectedAt: new Date().toISOString(), source: "agent.dotnet.runtime", dataHandlingState: "RAW", payload: facts };
   record.observation = { observationId: crypto.randomUUID(), evidenceId, observedAt: new Date().toISOString(),
     kind: "runtime-summary-collected", statement: "The temporary Agent runtime has the reported platform and architecture properties.", facts }; }
 

@@ -1,18 +1,24 @@
 # Master Support
 
+## Preflight Windows read-only (FOUNDATION-007)
+
+Uma Support Session autenticada e ativa pode executar um Preflight composto, sequencial e exclusivamente R0 com cinco capabilities: `system.runtime.summary@1.0`, `windows.os.summary@1.0`, `windows.memory.summary@1.0`, `windows.storage.summary@1.0` e `windows.execution-context.summary@1.0`. Os handlers C# usam APIs .NET e a chamada Win32 específica `GlobalMemoryStatusEx`; não usam shell, PowerShell, WMI, CIM, Registry ou processo externo.
+
+O Server persiste `PreflightRun`, referências de `PreflightSnapshot` e um `ObservedEndpoint` restrito à Session. `ObservedMachineName` é um identificador interno mutável, não prova identidade, não correlaciona Sessions e nunca cria um Asset. Evidence RAW permanece efêmera; Observations persistidas passam por allowlist determinística. O trigger `/dev` só é habilitado explicitamente em modo seguro para testes locais e exige uma Session autenticada existente.
+
 ## Bootstrap seguro (FOUNDATION-006)
 
 O modo operacional é explícito (`MASTER_SUPPORT_MODE=secure`) e exige PostgreSQL migrado, certificado/chave externos, HTTPS e WSS. Crie um convite local com `npm run support:invite`; o código é mostrado uma vez. No Agent, execute `dotnet run --project apps/agent/src/MasterSupport.Agent.csproj -- connect https://servidor:porta/` e informe o código no prompt sem eco. O convite autentica autorização temporária, não identidade de Asset.
 
 Defaults: convite 10 minutos, ConnectionTicket 60 segundos, ResumeTicket 5 minutos e lease 15 segundos. Tickets são opacos, single-use, vinculados e apenas hashes vivem em memória; restart invalida autoridade de Session/tickets, mas convite ativo não usado permanece até expirar. Revogue convite com `npm run support:revoke-invite -- <id>`. `development` precisa ser escolhido explicitamente, aceita somente loopback e nunca faz fallback a partir do modo seguro.
 
-O harness de TLS gera CA/chaves efêmeras fora do Git. `MASTER_SUPPORT_TEST_CA_CERT_PATH` é exclusivamente uma raiz explícita de teste e preserva validação de hostname, validade e cadeia. Produção usa o trust store do sistema. A única capability continua `system.runtime.summary@1.0`; não existe shell, PowerShell ou execução arbitrária.
+O harness de TLS gera CA/chaves efêmeras fora do Git. `MASTER_SUPPORT_TEST_CA_CERT_PATH` é exclusivamente uma raiz explícita de teste e preserva validação de hostname, validade e cadeia. Produção usa o trust store do sistema. O catálogo contém somente as cinco capabilities R0 do Preflight; não existe shell, PowerShell ou execução arbitrária.
 
 Master Support é a futura plataforma inteligente de helpdesk e administração tecnológica da Master Health. Seu princípio central é conduzir diagnósticos verificáveis, não apenas executar comandos.
 
 ## Estado atual
 
-O repositório contém a **FOUNDATION-005**: contratos JSON Schema, Control Plane TypeScript, Agent C#, Support Session temporária e histórico operacional mínimo durável em PostgreSQL. Requests são registradas antes do dispatch, resultados aceitos são gravados transacionalmente e um restart reconcilia trabalho incerto sem restaurar autoridade nem reexecutar requests. Ainda não constitui um produto operacional.
+O repositório contém a **FOUNDATION-007**: contratos JSON Schema, Control Plane TypeScript, Agent C#, Support Session autenticada e Preflight Windows read-only durável em PostgreSQL. Requests são registradas antes do dispatch, resultados aceitos são gravados transacionalmente e um restart reconcilia trabalho incerto sem restaurar autoridade nem reexecutar requests. Ainda não constitui um produto operacional.
 
 O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidores, Linux, impressoras, scanners, gerenciamento persistente, IA autônoma e ML permanecem fora do primeiro incremento.
 
@@ -44,7 +50,7 @@ O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidor
 ## O que existe
 
 - `apps/server`: Fastify com health/version, adapter WebSocket experimental, autoridade viva em memória e histórico mínimo de ServerInstance/Session/Observation/Audit em PostgreSQL, com métricas e endpoints `/dev` sanitizados somente em loopback.
-- `apps/agent`: console application temporário com modo explícito `connect-dev`, registry limitado de operações ativas, cancelamento e o único handler nativo `system.runtime.summary@1.0` R0/ReadOnly/non-admin.
+- `apps/agent`: console application temporário com registry limitado, cancelamento e cinco handlers nativos R0/ReadOnly/non-admin para runtime e Preflight Windows.
 - `packages/contracts`: JSON Schema 2020-12 para Hello, envelope, capability descriptor e erro.
 - fixtures e testes TypeScript, .NET e round-trip cross-language por arquivos temporários.
 - CI mínimo e `scripts/verify.ps1`.
@@ -99,7 +105,7 @@ dotnet run --project apps/agent/src/MasterSupport.Agent.csproj -- connect-dev
 
 O Agent conecta explicitamente a `ws://127.0.0.1:3000/session`, anuncia `system.runtime.summary@1.0`, faz handshake/heartbeat e tenta `SessionClose` no Ctrl+C. Não use esse canal fora de ambiente local: ele não possui autenticação de produção.
 
-Com uma Session ativa, o único disparo operacional permitido é:
+Com uma Session local de desenvolvimento ativa, uma Observation individual de runtime pode ser disparada por:
 
 ```powershell
 $sessionId = '<session-id exibido pelo Agent>'
@@ -112,4 +118,4 @@ Cancelamento explícito usa `POST /dev/sessions/:sessionId/observations/:request
 
 ## Regra de evolução
 
-Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A próxima etapa recomendada é `FOUNDATION-006 — Production Session Trust Bootstrap`: substituir o handshake dev-only por identidade autenticada, credenciais curtas e revogáveis, proteção contra replay e TLS validado, sem adicionar capability ou ação mutável. Ela não faz parte desta entrega.
+Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A recomendação para `FOUNDATION-008` é desenhar revisão humana e confirmação explícita de identidade antes de qualquer Asset Registry, sem correlação automática por hostname/fingerprint e sem ação mutável. Ela não faz parte desta entrega.

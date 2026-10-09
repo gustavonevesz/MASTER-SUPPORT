@@ -73,7 +73,7 @@ export class RealtimeSessionController {
       return;
     }
     logEvent("info", "agent_hello_received", { messageId: hello.messageId });
-    const session = this.sessions.create(hello, !this.durability);
+    const session = this.sessions.create(hello, !this.durability, this.authentication !== undefined);
     if (this.durability) {
       try {
         await this.durability.persistSessionCreated({ ...session, state: "active" });

@@ -14,6 +14,7 @@
 | [ADR-010](adr/ADR-010-observation-reconciliation.md) | Resultado recebido exige reconciliação; terminais não reabrem nem provocam reexecução | Aceito |
 | [ADR-011](adr/ADR-011-durable-observation-persistence.md) | Driver PostgreSQL direto, migrations SQL e separação entre histórico durável e autoridade viva | Aceito |
 | [ADR-012](adr/ADR-012-secure-session-trust-bootstrap.md) | TLS + SupportInvitation single-use + tickets opacos single-use e rotativos | Aceito |
+| [ADR-013](adr/ADR-013-windows-read-only-preflight.md) | Preflight composto, sequencial e durável; ObservedEndpoint por Session não é Asset | Aceito |
 
 Status permitidos: `Proposto`, `Trial`, `Aceito`, `Rejeitado`, `Substituído`. Os seis ADRs iniciais foram aceitos na GATE-000; ADR-007 e ADR-008 foram aceitos na FOUNDATION-001; ADR-009 permanece em Trial. Alterações materiais serão feitas por novo ADR ou revisão explicitamente versionada, preservando histórico no Git.
 

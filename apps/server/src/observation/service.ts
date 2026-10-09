@@ -9,8 +9,14 @@ import { SlidingWindowRateLimiter } from "./rate-limiter.js";
 import { ObservationReconciler, type ReconciliationEnvelope } from "./reconciler.js";
 import { terminalObservationStates, type ObservationRequestRecord, type ObservationState, type ObservationStore } from "./store.js";
 import type { DurablePersistence } from "../persistence/models.js";
+import { expectedSource, minimizeCapabilityFacts } from "../preflight/minimization.js";
 
-export const runtimeSummaryCapability = Object.freeze({ id: "system.runtime.summary", version: "1.0" });
+export const preflightCapabilities = Object.freeze([
+  { id: "system.runtime.summary", version: "1.0" }, { id: "windows.os.summary", version: "1.0" },
+  { id: "windows.memory.summary", version: "1.0" }, { id: "windows.storage.summary", version: "1.0" },
+  { id: "windows.execution-context.summary", version: "1.0" },
+]);
+export const runtimeSummaryCapability = preflightCapabilities[0]!;
 export type ObservationOptions = Readonly<{ timeoutMs: number; maxPayloadBytes: number; maxActivePerSession: number;
   maxActivePerAgent: number; maxActivePerCapability: number; rateLimit: number; rateWindowMs: number }>;
 type Pending = { promise: Promise<ObservationRequestRecord>; resolve(record: ObservationRequestRecord): void; timer: NodeJS.Timeout };
@@ -148,7 +154,13 @@ export class ObservationService {
     if (!record || !payload) return;
     if (typeof raw.messageId === "string") record.outcomeMessageId = raw.messageId;
     if (messageType === "observation.result") {
-      record.evidence = payload.evidence as Record<string, unknown>; record.observation = payload.observation as Record<string, unknown>;
+      const evidence = payload.evidence as Record<string, unknown>; const observation = payload.observation as Record<string, unknown>;
+      try {
+        if (evidence.capabilityId !== record.capabilityId || evidence.capabilityVersion !== record.capabilityVersion ||
+          evidence.source !== expectedSource(record.capabilityId) || observation.evidenceId !== evidence.evidenceId) throw new Error("invalid_provenance");
+        record.evidence = evidence; record.observation = { ...observation, facts: minimizeCapabilityFacts(record.capabilityId, evidence.payload),
+          dataHandlingState: ["windows.os.summary","windows.storage.summary","windows.execution-context.summary"].includes(record.capabilityId) ? "INTERNAL" : "MINIMIZED" };
+      } catch { this.fail(record, "invalid_observation", "Observation facts or provenance are invalid."); return; }
       this.transition(record, "completed"); this.finish(record, "observation.completed");
     } else if (messageType === "observation.failed") {
       this.fail(record, String(payload.code), String(payload.message));
@@ -226,6 +238,7 @@ export class ObservationService {
     return expired;
   }
   public activeCount(): number { return this.store.list().filter(record => !terminalObservationStates.has(record.state)).length; }
+  public getRecord(requestId:string):ObservationRequestRecord|undefined{return this.store.get(requestId);}
 
   private timeout(requestId: string): void {
     const record = this.store.get(requestId); if (!record || terminalObservationStates.has(record.state)) return;

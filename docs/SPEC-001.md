@@ -1,10 +1,14 @@
 # SPEC-001 — Fundação e visão do Master Support
 
-FOUNDATION-006 acrescenta trust bootstrap operacional sem criar identidade permanente de Asset: TLS validado, SupportInvitation de uso único, ConnectionTicket/ResumeTicket opacos e rotativos, revogação, TTL e rejeição de replay. O histórico PostgreSQL não restaura autoridade após restart. `system.runtime.summary@1.0` permanece a única capability.
+FOUNDATION-007 acrescenta Preflight Windows read-only sem criar identidade permanente de Asset: cinco capabilities R0, lifecycle durável, minimização, provenance, snapshot por referências e ObservedEndpoint por Session. O histórico PostgreSQL não restaura autoridade nem reexecuta Preflight após restart.
 
 - Status: Baseline aceita na GATE-000
 - Versão: 0.1
 - Escopo desta versão: arquitetura e requisitos; sem implementação funcional
+
+## Estado implementado na FOUNDATION-007
+
+FR-003 agora existe como workflow read-only: cinco capabilities R0 negociadas produzem Evidence com provenance, Observations minimizadas, `PreflightRun`, `PreflightSnapshot` e `ObservedEndpoint`. O endpoint observado pertence à Session e não é um Asset; hostname, OS, RAM e discos não confirmam nem correlacionam identidade permanente. Não há diagnóstico, hipótese, Action, IA ou mutação.
 
 ## 1. Propósito e limites
 

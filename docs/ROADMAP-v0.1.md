@@ -1,5 +1,7 @@
 # Roadmap v0.1
 
+FOUNDATION-007 concluída: Preflight Windows real, composto por cinco capabilities R0, com minimização, provenance, lifecycle durável, snapshot por referências e ObservedEndpoint por Session. Asset permanente, correlação automática, diagnóstico, IA e ações mutáveis continuam fora do escopo.
+
 FOUNDATION-006 concluída: bootstrap HTTPS, WSS autenticado, SupportInvitation durável single-use, tickets efêmeros single-use/rotativos, validação TLS real, replay/revogação/TTL e separação segura entre modo operacional e dev. Nenhuma capability, identidade de Asset, UI ou ação mutável foi adicionada. A próxima etapa deve ser definida em gate próprio; não está iniciada aqui.
 
 Cada etapa exige revisão e autorização explícita; itens posteriores são direção, não compromisso de escopo.
@@ -40,7 +42,15 @@ Status: implementada, aguardando gate de revisão. PostgreSQL real guarda Server
 
 ## FOUNDATION-006 — Production Session Trust Bootstrap
 
-Próxima etapa recomendada: substituir o handshake e resume dev-only por bootstrap autenticado de Support Session, credenciais curtas e revogáveis, TLS validado, proteção contra replay e vínculo explícito entre técnico, sessão e AgentInstance. Deve manter uma única capability R0, sem Job, PowerShell, ação mutável, UI ou Agent persistente.
+Status: concluída. Bootstrap autenticado de Support Session, credenciais curtas e revogáveis, TLS validado, proteção contra replay e vínculo explícito entre Session e AgentInstance.
+
+## FOUNDATION-007 — Windows Read-only Preflight
+
+Status: concluída. Cinco capabilities R0, PreflightRun/Snapshot duráveis, ObservedEndpoint por Session, minimização e teste real Windows/PostgreSQL/TLS.
+
+## FOUNDATION-008 — recomendação
+
+Definir revisão humana e confirmação explícita antes de criar Asset Registry. Deve preservar ObservedEndpoint como observação, proibir correlação automática por hostname/fingerprint e continuar sem ação mutável até um gate próprio.
 
 ## VERTICAL-001 — Read-only Preflight
 

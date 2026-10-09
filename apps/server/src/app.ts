@@ -4,7 +4,7 @@ import { logEvent } from "./logger.js";
 import { RealtimeSessionController } from "./realtime/controller.js";
 import { ActiveConnectionRegistry } from "./realtime/connection-registry.js";
 import { InMemoryObservationStore, sanitizeObservation, type ObservationStore } from "./observation/store.js";
-import { ObservationService, runtimeSummaryCapability, type ObservationOptions } from "./observation/service.js";
+import { ObservationService, preflightCapabilities, runtimeSummaryCapability, type ObservationOptions } from "./observation/service.js";
 import type { Clock } from "./session/clock.js";
 import { systemClock } from "./session/clock.js";
 import { SessionService, type SessionOptions } from "./session/service.js";
@@ -17,6 +17,7 @@ import { EphemeralTicketStore } from "./trust/tickets.js";
 import { BootstrapRateLimiter } from "./trust/rate-limit.js";
 import { validateAgentHello } from "./contracts.js";
 import { randomUUID } from "node:crypto";
+import { PreflightService } from "./preflight/service.js";
 
 export type ServerContext = Readonly<{
   app: FastifyInstance;
@@ -24,6 +25,7 @@ export type ServerContext = Readonly<{
   store: SessionStore;
   observationStore: ObservationStore;
   observations: ObservationService;
+  preflights: PreflightService;
   revokeSession(sessionId: string): void;
 }>;
 
@@ -53,7 +55,7 @@ export function buildApp(options: {
     leaseDurationMs: 15_000,
     heartbeatIntervalMs: 3_000,
     deduplicationCapacity: 100,
-    supportedCapabilities: [runtimeSummaryCapability],
+    supportedCapabilities: preflightCapabilities,
     ...options.sessionOptions,
   });
   const connections = new ActiveConnectionRegistry();
@@ -64,6 +66,7 @@ export function buildApp(options: {
     ...(options.observationTimeoutMs === undefined ? {} : { timeoutMs: options.observationTimeoutMs }),
     ...options.observationOptions,
   }, undefined, undefined, options.durability);
+  const preflights=new PreflightService(store,observations,clock,options.durability);
   app.get("/health", async () => ({ status: "ok", service: "master-support-server", version: productVersion, protocolVersions: supportedProtocolVersions }));
   app.get("/version", async () => ({ productVersion, protocolVersions: supportedProtocolVersions }));
   if (mode === "secure") app.post("/support/bootstrap", async (request, reply) => {
@@ -94,7 +97,8 @@ export function buildApp(options: {
       eventType: "bootstrap.accepted", sessionId: "", requestId: "", capabilityId: "", status: "accepted" });
     return reply.code(201).send({ connectionTicket: issued.ticket, expiresAt: issued.expiresAt.toISOString(), websocketUrl: "/session" });
   });
-  if (options.exposeDevelopmentSessions !== false) {
+  const exposeDevelopmentRoutes = options.exposeDevelopmentSessions ?? mode === "development";
+  if (exposeDevelopmentRoutes) {
     app.get("/dev/sessions", async () => ({ developmentOnly: true, sessions: store.list().map(sanitizeSession) }));
     app.get("/dev/sessions/:sessionId/observations", async request => {
       const { sessionId } = request.params as { sessionId: string };
@@ -103,6 +107,10 @@ export function buildApp(options: {
     app.get("/dev/metrics", async () => ({ developmentOnly: true, metrics: observations.metrics.snapshot(
       store.list().filter(session => session.state === "active").length, observations.activeCount()) }));
     app.get("/dev/audit", async () => ({ developmentOnly: true, events: observations.audit.list() }));
+    app.post("/dev/sessions/:sessionId/preflights",async(request,reply)=>{const {sessionId}=request.params as {sessionId:string};
+      try{return reply.code(201).send({developmentOnly:true,preflight:await preflights.start(sessionId)});}
+      catch(error){return reply.code(409).send({code:error instanceof Error?error.message:"preflight_rejected"});}});
+    app.get("/dev/sessions/:sessionId/preflights",async request=>{const {sessionId}=request.params as {sessionId:string};return {developmentOnly:true,preflights:preflights.listForSession(sessionId)};});
     if (options.durability) {
       app.get("/dev/history/sessions/:sessionId", async (request, reply) => {
         const { sessionId } = request.params as { sessionId: string }; const history = await options.durability!.sessionHistory(sessionId);
@@ -112,6 +120,8 @@ export function buildApp(options: {
         const { requestId } = request.params as { requestId: string }; const history = await options.durability!.observationHistory(requestId);
         return history ? { developmentOnly: true, observation: history } : reply.code(404).send({ code: "not_found" });
       });
+      app.get("/dev/history/preflights/:preflightRunId",async(request,reply)=>{const {preflightRunId}=request.params as {preflightRunId:string};
+        const history=await options.durability!.preflightHistory(preflightRunId);return history?{developmentOnly:true,preflight:history}:reply.code(404).send({code:"not_found"});});
     }
     app.post("/dev/sessions/:sessionId/observations", async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
@@ -176,7 +186,7 @@ export function buildApp(options: {
     }
   });
   return {
-    app, sessions, store, observationStore, observations,
+    app, sessions, store, observationStore, observations,preflights,
     revokeSession(sessionId: string): void {
       if (options.durability) void observations.authorityLostDurable(sessionId, "session_revoked");
       else observations.authorityLost(sessionId, "session_revoked");

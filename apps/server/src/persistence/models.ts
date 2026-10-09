@@ -1,6 +1,7 @@
 import type { OperationalAuditEvent } from "../observation/audit.js";
 import type { ObservationRequestRecord } from "../observation/store.js";
 import type { Session } from "../session/session.js";
+import type { PreflightRun } from "../preflight/models.js";
 
 export interface DurablePersistence {
   readonly serverInstanceId: string;
@@ -12,6 +13,10 @@ export interface DurablePersistence {
   appendAudit(event: OperationalAuditEvent): Promise<void>;
   sessionHistory(sessionId: string): Promise<Record<string, unknown> | undefined>;
   observationHistory(requestId: string): Promise<Record<string, unknown> | undefined>;
+  persistPreflightStarted(run: PreflightRun): Promise<void>;
+  persistPreflightFinished(run: PreflightRun): Promise<void>;
+  preflightHistory(preflightRunId: string): Promise<Record<string, unknown> | undefined>;
+  listPreflightHistory(sessionId: string): Promise<readonly Record<string, unknown>[]>;
   reconcileRestart(): Promise<{ sessions: number; observations: number }>;
   finish(): Promise<void>;
 }

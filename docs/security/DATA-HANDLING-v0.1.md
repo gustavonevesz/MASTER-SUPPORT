@@ -1,5 +1,9 @@
 # Tratamento de dados v0.1
 
+## Classificação do Preflight
+
+OS/build/arquiteturas, uptime, capacidade de RAM e capacidade de storage são dados operacionais `MINIMIZED`. `ObservedMachineName`, raiz do volume, `isElevated`, modo e nível de privilégio são `INTERNAL`. Nenhum campo é automaticamente `AI-SAFE`. Evidence chega como RAW efêmera; uma allowlist estrutural valida coerência e produz a Observation persistida. Username, SID, domínio, rede, serial, processos, nomes de arquivos, credenciais e tickets são excluídos.
+
 ## Credenciais de bootstrap
 
 InvitationSecret, ConnectionTicket e ResumeTicket são `SECRET`. Não entram em argumentos, URLs, logs, AuditEvent, métricas, Observation, Evidence ou fixtures. O banco recebe somente SHA-256 com separação de domínio do segredo aleatório do convite; tickets guardam somente hash em memória. A chave TLS é externa, nunca logada nem versionada. InvitationId, timestamps, issuer transitório, estado e vínculos são metadados operacionais; acesso continua restrito.

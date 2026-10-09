@@ -11,6 +11,7 @@ export type Session = {
   lastSeenAt: Date;
   expiresAt: Date;
   state: SessionState;
+  readonly authenticated?: boolean;
   readonly resumeToken: string;
   readonly processedMessageIds: Set<string>;
   readonly messageOrder: string[];

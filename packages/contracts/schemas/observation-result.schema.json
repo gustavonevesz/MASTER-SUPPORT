@@ -21,26 +21,15 @@
           "required": ["evidenceId", "capabilityId", "capabilityVersion", "collectedAt", "source", "dataHandlingState", "payload"],
           "properties": {
             "evidenceId": { "type": "string", "format": "uuid" },
-            "capabilityId": { "const": "system.runtime.summary" },
+            "capabilityId": { "type": "string", "minLength": 1 },
             "capabilityVersion": { "const": "1.0" },
             "collectedAt": { "type": "string", "format": "date-time" },
-            "source": { "const": "agent.native-runtime-api" },
+            "source": { "type": "string", "minLength": 1 },
             "dataHandlingState": { "const": "RAW" },
             "payload": {
               "type": "object",
-              "required": ["osPlatform", "osDescription", "osArchitecture", "processArchitecture", "dotnetRuntime", "agentVersion", "productVersion", "protocolVersion", "supportSessionMode"],
-              "properties": {
-                "osPlatform": { "type": "string", "minLength": 1 },
-                "osDescription": { "type": "string", "minLength": 1 },
-                "osArchitecture": { "type": "string", "minLength": 1 },
-                "processArchitecture": { "type": "string", "minLength": 1 },
-                "dotnetRuntime": { "type": "string", "minLength": 1 },
-                "agentVersion": { "type": "string", "minLength": 1 },
-                "productVersion": { "type": "string", "minLength": 1 },
-                "protocolVersion": { "const": "1.0" },
-                "supportSessionMode": { "const": "temporary-development" }
-              },
-              "additionalProperties": false
+              "properties": {},
+              "additionalProperties": true
             }
           },
           "additionalProperties": false
@@ -52,23 +41,12 @@
             "observationId": { "type": "string", "format": "uuid" },
             "evidenceId": { "type": "string", "format": "uuid" },
             "observedAt": { "type": "string", "format": "date-time" },
-            "kind": { "const": "runtime-summary-collected" },
-            "statement": { "const": "The temporary Agent runtime has the reported platform and architecture properties." },
+            "kind": { "type": "string", "minLength": 1 },
+            "statement": { "type": "string", "minLength": 1 },
             "facts": {
               "type": "object",
-              "required": ["osPlatform", "osDescription", "osArchitecture", "processArchitecture", "dotnetRuntime", "agentVersion", "productVersion", "protocolVersion", "supportSessionMode"],
-              "properties": {
-                "osPlatform": { "type": "string", "minLength": 1 },
-                "osDescription": { "type": "string", "minLength": 1 },
-                "osArchitecture": { "type": "string", "minLength": 1 },
-                "processArchitecture": { "type": "string", "minLength": 1 },
-                "dotnetRuntime": { "type": "string", "minLength": 1 },
-                "agentVersion": { "type": "string", "minLength": 1 },
-                "productVersion": { "type": "string", "minLength": 1 },
-                "protocolVersion": { "const": "1.0" },
-                "supportSessionMode": { "const": "temporary-development" }
-              },
-              "additionalProperties": false
+              "properties": {},
+              "additionalProperties": true
             }
           },
           "additionalProperties": false

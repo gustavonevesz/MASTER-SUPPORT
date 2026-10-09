@@ -16,4 +16,17 @@ foreach ($pattern in $forbidden) {
     $matches = $sourceFiles | Select-String -Pattern $pattern
     if ($matches) { $matches | ForEach-Object { Write-Error "Forbidden security pattern: $($_.Path):$($_.LineNumber)" } }
 }
+$agentOperationalFiles = Get-ChildItem -Path (Join-Path $repoRoot 'apps/agent/src') -Recurse -File -Filter '*.cs'
+$agentForbidden = @(
+    'powershell\.exe',
+    'pwsh\.exe',
+    'cmd\.exe',
+    'System\.Management',
+    'Microsoft\.PowerShell',
+    'Process\.Start'
+)
+foreach ($pattern in $agentForbidden) {
+    $matches = $agentOperationalFiles | Select-String -Pattern $pattern
+    if ($matches) { $matches | ForEach-Object { Write-Error "Forbidden Agent execution pattern: $($_.Path):$($_.LineNumber)" } }
+}
 Write-Host 'Security pattern checks passed.'

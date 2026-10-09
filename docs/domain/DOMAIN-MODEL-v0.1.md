@@ -1,5 +1,11 @@
 # Modelo de domínio v0.1
 
+## PreflightRun, PreflightSnapshot e ObservedEndpoint
+
+`PreflightRun` é uma execução temporal vinculada a uma Support Session autenticada e percorre `Running` até `Completed`, `Partial`, `Failed`, `Cancelled` ou, por reconciliação de restart, `Interrupted`. Cada capability mantém sua própria ObservationRequest e falha; o estado agregado nunca inventa dados ausentes.
+
+`PreflightSnapshot` registra instante, versões, completude, classificação e referências às Observations persistidas, sem copiar Evidence RAW. `ObservedEndpoint` significa somente “um endpoint foi observado nesta Session”; contém `ObservedMachineName` quando disponível. Não é `Asset`, não confirma identidade e não é correlacionado entre Sessions por hostname, OS, RAM ou discos.
+
 ## SupportInvitation e credenciais temporárias
 
 `SupportInvitation` autoriza exatamente um bootstrap e possui InvitationId, SecretHash, issuer transitório `local_operator`, CreatedAt, ExpiresAt, UsedAt, RevokedAt e Status. Ela não afirma identidade permanente do Asset/Endpoint. ConnectionTicket autoriza uma abertura WSS; ResumeTicket autoriza uma retomada da mesma Session/AgentInstance e gira após uso. Ambos são autoridade efêmera, não entidades históricas persistidas.

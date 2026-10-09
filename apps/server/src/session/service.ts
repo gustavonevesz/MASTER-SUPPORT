@@ -20,7 +20,7 @@ export class SessionService {
     public readonly options: SessionOptions,
   ) {}
 
-  public create(hello: AgentHello, activate = true): Session {
+  public create(hello: AgentHello, activate = true, authenticated = false): Session {
     const now = this.clock.now();
     const supported = new Map(this.options.supportedCapabilities.map(capability => [`${capability.id}@${capability.version}`, capability]));
     const negotiated = hello.payload.supportedCapabilities
@@ -35,6 +35,7 @@ export class SessionService {
       lastSeenAt: now,
       expiresAt: new Date(now.getTime() + this.options.leaseDurationMs),
       state: activate ? "active" : "connecting",
+      authenticated,
       resumeToken: randomBytes(32).toString("base64url"),
       processedMessageIds: new Set(),
       messageOrder: [],
