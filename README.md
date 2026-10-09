@@ -1,5 +1,13 @@
 # Master Support
 
+## Bootstrap seguro (FOUNDATION-006)
+
+O modo operacional é explícito (`MASTER_SUPPORT_MODE=secure`) e exige PostgreSQL migrado, certificado/chave externos, HTTPS e WSS. Crie um convite local com `npm run support:invite`; o código é mostrado uma vez. No Agent, execute `dotnet run --project apps/agent/src/MasterSupport.Agent.csproj -- connect https://servidor:porta/` e informe o código no prompt sem eco. O convite autentica autorização temporária, não identidade de Asset.
+
+Defaults: convite 10 minutos, ConnectionTicket 60 segundos, ResumeTicket 5 minutos e lease 15 segundos. Tickets são opacos, single-use, vinculados e apenas hashes vivem em memória; restart invalida autoridade de Session/tickets, mas convite ativo não usado permanece até expirar. Revogue convite com `npm run support:revoke-invite -- <id>`. `development` precisa ser escolhido explicitamente, aceita somente loopback e nunca faz fallback a partir do modo seguro.
+
+O harness de TLS gera CA/chaves efêmeras fora do Git. `MASTER_SUPPORT_TEST_CA_CERT_PATH` é exclusivamente uma raiz explícita de teste e preserva validação de hostname, validade e cadeia. Produção usa o trust store do sistema. A única capability continua `system.runtime.summary@1.0`; não existe shell, PowerShell ou execução arbitrária.
+
 Master Support é a futura plataforma inteligente de helpdesk e administração tecnológica da Master Health. Seu princípio central é conduzir diagnósticos verificáveis, não apenas executar comandos.
 
 ## Estado atual

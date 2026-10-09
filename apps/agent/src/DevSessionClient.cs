@@ -14,18 +14,21 @@ public sealed class DevSessionClient
         _observations = observations ?? new ObservationProcessor();
     }
 
-    public async Task<int> RunAsync(Uri uri, int? heartbeatLimit, CancellationToken cancellationToken)
+    public async Task<int> RunAsync(Uri uri, int? heartbeatLimit, CancellationToken cancellationToken, AgentHello? preparedHello = null,
+        Func<string, IAgentTransport>? resumeTransportFactory = null)
     {
-        var hello = AgentHelloFactory.Create();
-        await _transport.ConnectAsync(uri, cancellationToken);
+        var hello = preparedHello ?? AgentHelloFactory.Create();
+        IAgentTransport transport = _transport; IAgentTransport? ownedTransport = null;
+        await transport.ConnectAsync(uri, cancellationToken);
         Console.WriteLine("Connected");
-        await _transport.SendAsync(_contracts.SerializeAgentHello(hello), cancellationToken);
-        var serverHelloJson = await _transport.ReceiveAsync(cancellationToken) ?? throw new IOException("Server closed during handshake.");
+        await transport.SendAsync(_contracts.SerializeAgentHello(hello), cancellationToken);
+        var serverHelloJson = await transport.ReceiveAsync(cancellationToken) ?? throw new IOException("Server closed during handshake.");
         EnsureValid(serverHelloJson, "server-hello.schema.json");
         using var serverHello = JsonDocument.Parse(serverHelloJson);
         var root = serverHello.RootElement;
         var sessionId = root.GetProperty("sessionId").GetGuid();
         var interval = root.GetProperty("payload").GetProperty("heartbeatIntervalSeconds").GetInt32();
+        string? resumeTicket = root.GetProperty("payload").TryGetProperty("resumeTicket", out var initialResume) ? initialResume.GetString() : null;
         var negotiatedCapabilities = root.GetProperty("payload").GetProperty("negotiatedCapabilities").EnumerateArray()
             .Select(item => $"{item.GetProperty("id").GetString()}@{item.GetProperty("version").GetString()}")
             .ToHashSet(StringComparer.Ordinal);
@@ -35,7 +38,7 @@ public sealed class DevSessionClient
         var completed = 0;
         var pendingHeartbeats = new HashSet<Guid>();
         var observationTasks = new System.Collections.Concurrent.ConcurrentDictionary<Task, byte>();
-        Task<string?> receive = _transport.ReceiveAsync(cancellationToken);
+        Task<string?> receive = transport.ReceiveAsync(cancellationToken);
         var nextHeartbeat = Task.Delay(TimeSpan.FromSeconds(interval), cancellationToken);
         while (!cancellationToken.IsCancellationRequested && (heartbeatLimit is null || completed < heartbeatLimit))
         {
@@ -46,7 +49,7 @@ public sealed class DevSessionClient
             {
                 var messageId = Guid.NewGuid();
                 pendingHeartbeats.Add(messageId);
-                await _transport.SendAsync(JsonSerializer.Serialize(new
+                await transport.SendAsync(JsonSerializer.Serialize(new
                 {
                     protocolVersion = "1.0", messageId, messageType = "heartbeat", sessionId,
                     timestamp = DateTimeOffset.UtcNow, payload = new { },
@@ -58,12 +61,26 @@ public sealed class DevSessionClient
             var incoming = await receive;
             if (incoming is null)
             {
+                if (resumeTransportFactory is not null && resumeTicket is not null && !cancellationToken.IsCancellationRequested)
+                {
+                    if (ownedTransport is not null) await ownedTransport.DisposeAsync();
+                    ownedTransport = resumeTransportFactory(resumeTicket); transport = ownedTransport;
+                    await transport.ConnectAsync(uri, cancellationToken);
+                    var resumeId = Guid.NewGuid();
+                    await transport.SendAsync(JsonSerializer.Serialize(new { protocolVersion = "1.0", messageId = resumeId,
+                        messageType = "session.resume.request", sessionId, timestamp = DateTimeOffset.UtcNow,
+                        payload = new { agentInstanceId = hello.Payload.AgentInstanceId } }, ContractService.SerializerOptions), cancellationToken);
+                    var resumedJson = await transport.ReceiveAsync(cancellationToken) ?? throw new IOException("Server closed during secure resume.");
+                    EnsureValid(resumedJson, "session-resume-result.schema.json"); using var resumed = JsonDocument.Parse(resumedJson);
+                    resumeTicket = resumed.RootElement.GetProperty("payload").GetProperty("resumeTicket").GetString();
+                    Console.WriteLine("Session resumed"); receive = transport.ReceiveAsync(cancellationToken); continue;
+                }
                 _observations.CancelSession(sessionId, "disconnected");
                 await _observations.WaitForSessionIdleAsync(sessionId);
                 Console.WriteLine("Session ended by server; no further observation requests will be accepted.");
                 return 0;
             }
-            receive = _transport.ReceiveAsync(cancellationToken);
+            receive = transport.ReceiveAsync(cancellationToken);
             using var message = JsonDocument.Parse(incoming);
             var messageType = message.RootElement.GetProperty("messageType").GetString();
             if (messageType == "heartbeat.ack")
@@ -76,14 +93,14 @@ public sealed class DevSessionClient
             }
             else if (messageType == "observation.request")
             {
-                var task = _observations.HandleAsync(incoming, sessionId, negotiatedCapabilities, _transport, cancellationToken);
+                var task = _observations.HandleAsync(incoming, sessionId, negotiatedCapabilities, transport, cancellationToken);
                 observationTasks.TryAdd(task, 0);
                 _ = task.ContinueWith(completedTask => observationTasks.TryRemove(completedTask, out _), CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
             else if (messageType == "observation.cancel")
             {
-                await _observations.HandleCancelAsync(incoming, sessionId, _transport, cancellationToken);
+                await _observations.HandleCancelAsync(incoming, sessionId, transport, cancellationToken);
             }
             else if (messageType == "protocol.error")
             {
@@ -95,14 +112,15 @@ public sealed class DevSessionClient
         _observations.CancelSession(sessionId, "session_closed");
         await _observations.WaitForSessionIdleAsync(sessionId);
         var closeId = Guid.NewGuid();
-        await _transport.SendAsync(JsonSerializer.Serialize(new
+        await transport.SendAsync(JsonSerializer.Serialize(new
         {
             protocolVersion = "1.0", messageId = closeId, messageType = "session.close", sessionId,
             timestamp = DateTimeOffset.UtcNow, payload = new { },
         }, ContractService.SerializerOptions), CancellationToken.None);
         var closedJson = await receive ?? throw new IOException("Server closed before SessionClosed.");
         EnsureValid(closedJson, "session-closed.schema.json");
-        await _transport.CloseAsync(CancellationToken.None);
+        await transport.CloseAsync(CancellationToken.None);
+        if (ownedTransport is not null) await ownedTransport.DisposeAsync();
         return 0;
     }
 

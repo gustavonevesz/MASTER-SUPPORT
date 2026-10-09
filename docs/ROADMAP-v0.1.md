@@ -1,5 +1,7 @@
 # Roadmap v0.1
 
+FOUNDATION-006 concluída: bootstrap HTTPS, WSS autenticado, SupportInvitation durável single-use, tickets efêmeros single-use/rotativos, validação TLS real, replay/revogação/TTL e separação segura entre modo operacional e dev. Nenhuma capability, identidade de Asset, UI ou ação mutável foi adicionada. A próxima etapa deve ser definida em gate próprio; não está iniciada aqui.
+
 Cada etapa exige revisão e autorização explícita; itens posteriores são direção, não compromisso de escopo.
 
 ## ETAPA 0 — Fundação (esta entrega)

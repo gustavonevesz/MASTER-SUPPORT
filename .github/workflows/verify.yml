@@ -32,5 +32,6 @@ jobs:
           if (-not $ready) { throw 'PostgreSQL did not become ready.' }
           & 'C:\Program Files\PostgreSQL\17\bin\createdb.exe' -h 127.0.0.1 -U postgres master_support_test
           if ($LASTEXITCODE -ne 0) { throw 'Could not create isolated test database.' }
-      - shell: powershell
+      - name: Verify including ephemeral TLS certificates
+        shell: powershell
         run: .\scripts\verify.ps1

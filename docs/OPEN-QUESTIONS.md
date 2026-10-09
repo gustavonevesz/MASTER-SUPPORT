@@ -1,5 +1,7 @@
 # Questões abertas relevantes
 
+OQ-001 foi resolvida pela ADR-012 para Support Session temporária: TLS + convite single-use + tickets opacos rotativos. Permanecem abertas identidade permanente de Asset/Managed Endpoint, distribuição operacional do código, PKI/certificados de produção, tolerância formal de clock, auditoria resistente a adulteração e rate limiting distribuído.
+
 Estas questões podem alterar segurança, protocolo ou modelo; não devem ser resolvidas por conveniência silenciosa.
 
 | ID | Questão | Por que importa | Momento de decisão |

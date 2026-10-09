@@ -79,6 +79,15 @@ export class SessionService {
     return session;
   }
 
+  public resumeAuthenticated(sessionId: string, agentInstanceId: string): Session | undefined {
+    const session = this.store.get(sessionId);
+    if (!session || terminalStates.has(session.state) || session.agentInstanceId !== agentInstanceId) return undefined;
+    this.expireDueSessions();
+    if (session.state !== "disconnected") return undefined;
+    const now = this.clock.now(); session.state = "active"; session.lastSeenAt = now;
+    session.expiresAt = new Date(now.getTime() + this.options.leaseDurationMs); return session;
+  }
+
   public close(sessionId: string): Session { return this.transitionTerminal(sessionId, "closed"); }
   public revoke(sessionId: string): Session { return this.transitionTerminal(sessionId, "revoked"); }
 

@@ -12,6 +12,11 @@ import { InMemorySessionStore, sanitizeSession, type SessionStore } from "./sess
 import { WebSocketServerTransport } from "./transport/websocket-transport.js";
 import { productVersion, supportedProtocolVersions } from "./versions.js";
 import type { DurablePersistence } from "./persistence/models.js";
+import type { SupportInvitationService } from "./trust/invitation.js";
+import { EphemeralTicketStore } from "./trust/tickets.js";
+import { BootstrapRateLimiter } from "./trust/rate-limit.js";
+import { validateAgentHello } from "./contracts.js";
+import { randomUUID } from "node:crypto";
 
 export type ServerContext = Readonly<{
   app: FastifyInstance;
@@ -31,8 +36,17 @@ export function buildApp(options: {
   observationTimeoutMs?: number;
   observationOptions?: Partial<ObservationOptions>;
   durability?: DurablePersistence;
+  mode?: "secure" | "development";
+  https?: { key: string | Buffer; cert: string | Buffer };
+  invitations?: SupportInvitationService;
+  ticketStore?: EphemeralTicketStore;
+  connectionTicketTtlMs?: number;
+  resumeTicketTtlMs?: number;
+  bootstrapRateLimit?: number;
 } = {}): ServerContext {
-  const app = Fastify({ logger: false });
+  const mode = options.mode ?? "development";
+  if (mode === "secure" && (!options.https || !options.invitations)) throw new Error("secure_mode_requires_tls_and_invitation_store");
+  const app = Fastify({ logger: false, ...(options.https ? { https: options.https } : {}) });
   const clock = options.clock ?? systemClock;
   const store = options.store ?? new InMemorySessionStore();
   const sessions = new SessionService(store, clock, {
@@ -43,6 +57,8 @@ export function buildApp(options: {
     ...options.sessionOptions,
   });
   const connections = new ActiveConnectionRegistry();
+  const tickets = options.ticketStore ?? new EphemeralTicketStore(clock, options.connectionTicketTtlMs ?? 60_000, options.resumeTicketTtlMs ?? 300_000);
+  const bootstrapLimiter = new BootstrapRateLimiter(clock, options.bootstrapRateLimit ?? 10, 60_000);
   const observationStore = options.observationStore ?? new InMemoryObservationStore();
   const observations = new ObservationService(store, connections, observationStore, clock, {
     ...(options.observationTimeoutMs === undefined ? {} : { timeoutMs: options.observationTimeoutMs }),
@@ -50,6 +66,34 @@ export function buildApp(options: {
   }, undefined, undefined, options.durability);
   app.get("/health", async () => ({ status: "ok", service: "master-support-server", version: productVersion, protocolVersions: supportedProtocolVersions }));
   app.get("/version", async () => ({ productVersion, protocolVersions: supportedProtocolVersions }));
+  if (mode === "secure") app.post("/support/bootstrap", async (request, reply) => {
+    const body = request.body as { invitationId?: unknown; invitationSecret?: unknown; agentHello?: unknown } | undefined;
+    const invitationId = typeof body?.invitationId === "string" ? body.invitationId : "invalid";
+    if (!bootstrapLimiter.allow(request.ip, invitationId)) {
+      if (options.durability) void options.durability.appendAudit({ eventId: randomUUID(), occurredAt: clock.now().toISOString(),
+        eventType: "bootstrap.rejected", sessionId: "", requestId: "", capabilityId: "", status: "rejected", reason: "rate_limited" });
+      return reply.code(429).send({ code: "rate_limited" });
+    }
+    const hello = validateAgentHello(body?.agentHello);
+    if (!body || typeof body.invitationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(body.invitationId) ||
+      typeof body.invitationSecret !== "string" || body.invitationSecret.length < 32 || !hello.valid) {
+      if (options.durability) void options.durability.appendAudit({ eventId: randomUUID(), occurredAt: clock.now().toISOString(),
+        eventType: "bootstrap.rejected", sessionId: "", requestId: "", capabilityId: "", status: "rejected", reason: "invalid_request" });
+      return reply.code(400).send({ code: "invalid_bootstrap" });
+    }
+    const consumed = await options.invitations!.consume(body.invitationId, body.invitationSecret, hello.value);
+    if (!consumed.accepted) {
+      if (options.durability) void options.durability.appendAudit({ eventId: randomUUID(), occurredAt: clock.now().toISOString(),
+        eventType: "bootstrap.rejected", sessionId: "", requestId: "", capabilityId: "", status: "rejected", reason: consumed.reason });
+      return reply.code(401).send({ code: "bootstrap_rejected" });
+    }
+    const supported = new Map(sessions.options.supportedCapabilities.map(item => [`${item.id}@${item.version}`, item]));
+    const capabilities = hello.value.payload.supportedCapabilities.map(item => supported.get(`${item.id}@${item.version}`)).filter(item => item !== undefined);
+    const issued = tickets.issue({ kind: "connection", agentInstanceId: hello.value.payload.agentInstanceId, capabilities });
+    if (options.durability) void options.durability.appendAudit({ eventId: randomUUID(), occurredAt: clock.now().toISOString(),
+      eventType: "bootstrap.accepted", sessionId: "", requestId: "", capabilityId: "", status: "accepted" });
+    return reply.code(201).send({ connectionTicket: issued.ticket, expiresAt: issued.expiresAt.toISOString(), websocketUrl: "/session" });
+  });
   if (options.exposeDevelopmentSessions !== false) {
     app.get("/dev/sessions", async () => ({ developmentOnly: true, sessions: store.list().map(sanitizeSession) }));
     app.get("/dev/sessions/:sessionId/observations", async request => {
@@ -91,7 +135,19 @@ export function buildApp(options: {
   }
   app.register(async realtime => {
     await realtime.register(websocket, { options: { maxPayload: 64 * 1024 } });
-    realtime.get("/session", { websocket: true }, socket => {
+    realtime.get("/session", { websocket: true }, (socket, request) => {
+      if (mode === "secure") {
+        const authorization = request.headers.authorization;
+        const credential = authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+        const claims = tickets.consumeAny(credential);
+        if (!claims) {
+          if (options.durability) void options.durability.appendAudit({ eventId: randomUUID(), occurredAt: clock.now().toISOString(),
+            eventType: "session.replay_rejected", sessionId: "", requestId: "", capabilityId: "", status: "rejected" });
+          socket.close(1008, "authentication_required"); return;
+        }
+        new RealtimeSessionController(new WebSocketServerTransport(socket), sessions, clock, connections, observations,
+          options.durability, { claims, tickets }).start(); return;
+      }
       new RealtimeSessionController(new WebSocketServerTransport(socket), sessions, clock, connections, observations, options.durability).start();
     });
   });
@@ -99,6 +155,7 @@ export function buildApp(options: {
   const expirationTimer = setInterval(() => {
     if (options.durability) void observations.expireDueRequestsDurable(); else observations.expireDueRequests();
     for (const session of sessions.expireDueSessions()) {
+      tickets.revokeSession(session.id);
       if (options.durability) void observations.authorityLostDurable(session.id, "session_expired");
       else observations.authorityLost(session.id, "session_expired");
       connections.close(session.id, 1008, "session_expired");
@@ -124,6 +181,7 @@ export function buildApp(options: {
       if (options.durability) void observations.authorityLostDurable(sessionId, "session_revoked");
       else observations.authorityLost(sessionId, "session_revoked");
       const session = sessions.revoke(sessionId);
+      tickets.revokeSession(sessionId);
       if (options.durability) void options.durability.persistSessionState(session, "revoked").catch(() => observations.metrics.increment("db_operation_failures"));
       logEvent("info", "session_revoked", { sessionId: session.id });
       connections.close(sessionId);

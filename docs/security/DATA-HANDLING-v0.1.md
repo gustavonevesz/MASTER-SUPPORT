@@ -1,5 +1,9 @@
 # Tratamento de dados v0.1
 
+## Credenciais de bootstrap
+
+InvitationSecret, ConnectionTicket e ResumeTicket são `SECRET`. Não entram em argumentos, URLs, logs, AuditEvent, métricas, Observation, Evidence ou fixtures. O banco recebe somente SHA-256 com separação de domínio do segredo aleatório do convite; tickets guardam somente hash em memória. A chave TLS é externa, nunca logada nem versionada. InvitationId, timestamps, issuer transitório, estado e vínculos são metadados operacionais; acesso continua restrito.
+
 Status: baseline arquitetural aceita na GATE-000; classificação organizacional e política LGPD definitivas permanecem abertas.
 
 ## Princípio

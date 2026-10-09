@@ -1,5 +1,9 @@
 # Modelo de domínio v0.1
 
+## SupportInvitation e credenciais temporárias
+
+`SupportInvitation` autoriza exatamente um bootstrap e possui InvitationId, SecretHash, issuer transitório `local_operator`, CreatedAt, ExpiresAt, UsedAt, RevokedAt e Status. Ela não afirma identidade permanente do Asset/Endpoint. ConnectionTicket autoriza uma abertura WSS; ResumeTicket autoriza uma retomada da mesma Session/AgentInstance e gira após uso. Ambos são autoridade efêmera, não entidades históricas persistidas.
+
 Status: conceitual. Cardinalidades, campos e agregados serão validados por casos de uso antes de virar esquema físico.
 
 ## Entidades e conceitos

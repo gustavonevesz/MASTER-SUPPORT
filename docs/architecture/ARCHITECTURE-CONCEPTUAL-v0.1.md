@@ -1,5 +1,9 @@
 # Arquitetura conceitual v0.1
 
+## Trust bootstrap operacional
+
+O Control Plane persiste SupportInvitation (hash e metadados) no PostgreSQL e mantém ConnectionTicket/ResumeTicket somente em memória. HTTPS consome o convite atomicamente; WSS consome um ticket no header Authorization antes de criar autoridade. Cada resume consome e gira o ticket. Revogação/expiração encerram a autoridade, e restart nunca reconstitui Session ou tickets a partir do histórico. Asset, Endpoint, AgentInstance, SupportInvitation, Session e ServerInstance são limites distintos.
+
 Status: baseline aceita na GATE-000. Esta arquitetura descreve limites lógicos, não processos implantáveis obrigatórios.
 
 ## Direção

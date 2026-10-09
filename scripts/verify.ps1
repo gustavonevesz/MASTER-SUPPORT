@@ -51,10 +51,14 @@ try {
     Write-Host '== TypeScript typecheck/build/tests and cross-language round-trip =='
     Invoke-Checked npm run verify:ts
 
+    Write-Host '== Secure bootstrap/TLS/WSS/replay and security patterns =='
+    & (Join-Path $PSScriptRoot 'security-pattern-check.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Security pattern checks failed.' }
+
     Write-Host '== Repository checks =='
     Invoke-Checked git diff --check
 
-    Write-Host 'FOUNDATION-005 verification succeeded.'
+    Write-Host 'FOUNDATION-006 verification succeeded.'
 }
 finally {
     Pop-Location

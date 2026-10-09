@@ -35,9 +35,12 @@ export type ServerHello = Readonly<{
     compatibility: "compatible";
     createdAt: string;
     heartbeatIntervalSeconds: number;
-    resumeToken: string;
+    resumeToken?: string;
+    resumeTicket?: string;
+    resumeTicketExpiresAt?: string;
+    authentication?: "support_invitation";
     negotiatedCapabilities: readonly CapabilityDescriptor[];
-    developmentOnly: true;
+    developmentOnly: boolean;
   }>;
 }>;
 

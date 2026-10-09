@@ -46,3 +46,17 @@ export function createServerHello(
     },
   };
 }
+
+export function createAuthenticatedServerHello(
+  agentHello: AgentHello,
+  session: { id: string; createdAt: Date; expiresAt: Date; capabilities: readonly { id: string; version: string }[] },
+  heartbeatIntervalSeconds: number,
+  resume: { ticket: string; expiresAt: Date },
+): ServerHello {
+  const timestamp = new Date();
+  return { protocolVersion: "1.0", messageId: randomUUID(), messageType: "server.hello", sessionId: session.id,
+    correlationId: agentHello.messageId, timestamp: timestamp.toISOString(), expiresAt: session.expiresAt.toISOString(),
+    payload: { serverVersion: productVersion, selectedProtocolVersion: "1.0", compatibility: "compatible",
+      createdAt: session.createdAt.toISOString(), heartbeatIntervalSeconds, negotiatedCapabilities: session.capabilities,
+      resumeTicket: resume.ticket, resumeTicketExpiresAt: resume.expiresAt.toISOString(), authentication: "support_invitation", developmentOnly: false } };
+}

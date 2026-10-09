@@ -1,0 +1,19 @@
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$sourceFiles = Get-ChildItem -Path (Join-Path $repoRoot 'apps') -Recurse -File |
+    Where-Object { $_.Extension -in '.ts', '.cs', '.js' -and $_.FullName -notmatch '[\\/]bin[\\/]|[\\/]obj[\\/]|[\\/]test[\\/]' }
+$forbidden = @(
+    'DangerousAcceptAnyServerCertificateValidator',
+    'NODE_TLS_REJECT_UNAUTHORIZED',
+    'rejectUnauthorized\s*:\s*false',
+    'ServerCertificateCustomValidationCallback\s*=\s*[^;]*=>\s*true',
+    '[?&](token|ticket|secret)='
+)
+foreach ($pattern in $forbidden) {
+    $matches = $sourceFiles | Select-String -Pattern $pattern
+    if ($matches) { $matches | ForEach-Object { Write-Error "Forbidden security pattern: $($_.Path):$($_.LineNumber)" } }
+}
+Write-Host 'Security pattern checks passed.'

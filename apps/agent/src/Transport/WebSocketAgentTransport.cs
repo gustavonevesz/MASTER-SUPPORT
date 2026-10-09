@@ -9,6 +9,12 @@ public sealed class WebSocketAgentTransport : IAgentTransport
     private readonly SemaphoreSlim _sendGate = new(1, 1);
     private int _pendingSends;
     private const int MaxPendingSends = 4;
+    public WebSocketAgentTransport(string? bearerToken = null, string? testCaPath = null)
+    {
+        if (bearerToken is not null) _socket.Options.SetRequestHeader("Authorization", $"Bearer {bearerToken}");
+        if (testCaPath is not null) _socket.Options.RemoteCertificateValidationCallback =
+            (_, certificate, chain, errors) => TlsValidation.ValidateWithTestCa(certificate, chain, errors, testCaPath);
+    }
     public AgentConnectionState State => _socket.State switch
     {
         WebSocketState.None => AgentConnectionState.Disconnected,

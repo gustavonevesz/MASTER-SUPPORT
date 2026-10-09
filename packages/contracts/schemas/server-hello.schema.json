@@ -14,7 +14,7 @@
     "expiresAt": { "type": "string", "format": "date-time" },
     "payload": {
       "type": "object",
-      "required": ["serverVersion", "selectedProtocolVersion", "compatibility", "createdAt", "heartbeatIntervalSeconds", "resumeToken", "negotiatedCapabilities", "developmentOnly"],
+      "required": ["serverVersion", "selectedProtocolVersion", "compatibility", "createdAt", "heartbeatIntervalSeconds", "negotiatedCapabilities", "developmentOnly"],
       "properties": {
         "serverVersion": { "type": "string", "minLength": 1 },
         "selectedProtocolVersion": { "const": "1.0" },
@@ -22,6 +22,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "heartbeatIntervalSeconds": { "type": "integer" },
         "resumeToken": { "type": "string", "minLength": 32 },
+        "resumeTicket": { "type": "string", "minLength": 32 },
+        "resumeTicketExpiresAt": { "type": "string", "format": "date-time" },
+        "authentication": { "enum": ["support_invitation"] },
         "negotiatedCapabilities": {
           "type": "array",
           "uniqueItems": true,
@@ -35,7 +38,7 @@
             "additionalProperties": false
           }
         },
-        "developmentOnly": { "const": true }
+        "developmentOnly": { "type": "boolean" }
       },
       "additionalProperties": false
     }

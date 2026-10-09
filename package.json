@@ -16,6 +16,8 @@
     "typecheck": "npm run typecheck --workspace @master-support/server",
     "db:migrate": "npm run db:migrate --workspace @master-support/server",
     "db:validate-test": "npm run db:validate-test --workspace @master-support/server",
+    "support:invite": "npm run support:invite --workspace @master-support/server",
+    "support:revoke-invite": "npm run support:revoke-invite --workspace @master-support/server --",
     "verify:ts": "npm run typecheck && npm run build && npm test"
   }
 }

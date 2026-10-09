@@ -21,7 +21,7 @@ test("empty database migrates, reapplies idempotently, and rejects a future sche
     await migrate(pool); await migrate(pool);
     const tables = await pool.query<{ tablename: string }>("SELECT tablename FROM pg_tables WHERE schemaname=current_schema() ORDER BY tablename");
     assert.deepEqual(tables.rows.map(row => row.tablename), ["audit_events", "evidence_metadata", "observation_requests",
-      "observations", "schema_migrations", "server_instances", "session_records"]);
+      "observations", "schema_migrations", "server_instances", "session_records", "support_invitations"]);
     await pool.query("INSERT INTO schema_migrations(version,name,checksum) VALUES($1,$2,$3)", [999, "future.sql", "future"]);
     await assert.rejects(migrate(pool), /database_schema_is_newer/);
     await assert.rejects(PostgresPersistence.start(url), /database_schema_version_mismatch/);

@@ -1,5 +1,9 @@
 # Threat model v0.1
 
+## Bootstrap de Session (FOUNDATION-006)
+
+Roubo/brute force são reduzidos por 256 bits, TTL, rate limit e revogação. Replay/race são contidos por consumo transacional do convite e tickets single-use/rotativos. Vazamento por argv, URL, log, audit, métricas e banco é evitado por prompt sem eco, Authorization header, redaction estrutural e armazenamento apenas de hashes. MITM, servidor/certificado falso, hostname incorreto, validade e downgrade são tratados por HTTPS/WSS sem fallback e validação TLS integral. Agent impostor/session fixation são limitados pelo vínculo a AgentInstance e capabilities; isto ainda não prova Asset. Hijacking/reuse após revoke/expiry/restart é contido por tickets vinculados em memória e remoção de autoridade. DB comprometido expõe metadados/hash do convite, não seu segredo de alta entropia; crash dump do processo ainda é risco residual durante a curta vida de tickets. Clock skew permanece questão operacional antes do piloto. Development em LAN falha fechado.
+
 Status: baseline arquitetural; não é avaliação de produção.
 
 ## Método e escopo

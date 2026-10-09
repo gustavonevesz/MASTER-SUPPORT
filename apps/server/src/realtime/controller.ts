@@ -2,13 +2,14 @@ import { randomUUID } from "node:crypto";
 import type { AgentHello } from "../contracts.js";
 import { validateAgentHello, validateSessionMessage } from "../contracts.js";
 import { logEvent } from "../logger.js";
-import { createServerHello } from "../messages.js";
+import { createAuthenticatedServerHello, createServerHello } from "../messages.js";
 import type { Clock } from "../session/clock.js";
 import type { SessionService } from "../session/service.js";
 import type { MessageTransport } from "../transport/message-transport.js";
 import type { ActiveConnectionRegistry } from "./connection-registry.js";
 import type { ObservationService } from "../observation/service.js";
 import type { DurablePersistence } from "../persistence/models.js";
+import type { EphemeralTicketStore, TicketClaims } from "../trust/tickets.js";
 
 type IncomingEnvelope = { protocolVersion?: unknown; messageId?: unknown; messageType?: unknown; sessionId?: unknown; payload?: unknown };
 
@@ -23,6 +24,7 @@ export class RealtimeSessionController {
     private readonly connections: ActiveConnectionRegistry,
     private readonly observations: ObservationService,
     private readonly durability?: DurablePersistence,
+    private readonly authentication?: { claims: TicketClaims; tickets: EphemeralTicketStore },
   ) {}
   public start(): void {
     logEvent("info", "agent_connection_opened");
@@ -40,7 +42,7 @@ export class RealtimeSessionController {
     if (typeof raw.messageType !== "string") { this.reject("invalid_message", "messageType is required."); return; }
     if (!this.sessionId) {
       if (raw.messageType === "agent.hello") await this.handleHello(raw);
-      else if (raw.messageType === "session.resume.request") this.handleResume(raw);
+      else if (raw.messageType === "session.resume.request") await this.handleResume(raw);
       else this.reject("invalid_message", "Handshake or resume is required.");
       return;
     }
@@ -59,6 +61,13 @@ export class RealtimeSessionController {
       return;
     }
     const hello: AgentHello = validation.value;
+    const announced = hello.payload.supportedCapabilities.filter(capability =>
+      this.sessions.options.supportedCapabilities.some(supported => supported.id === capability.id && supported.version === capability.version));
+    if (this.authentication && (this.authentication.claims.kind !== "connection" ||
+      this.authentication.claims.agentInstanceId !== hello.payload.agentInstanceId ||
+      JSON.stringify(this.authentication.claims.capabilities) !== JSON.stringify(announced))) {
+      this.reject("authentication_mismatch", "Authenticated AgentInstance does not match handshake.", hello.messageId); return;
+    }
     if (hello.payload.agentVersion !== "0.1.0") {
       this.reject("incompatible_agent", "Agent version is not supported.", hello.messageId);
       return;
@@ -77,20 +86,37 @@ export class RealtimeSessionController {
     this.sessionId = session.id;
     this.connections.register(session.id, this.transport);
     logEvent("info", "session_created", { sessionId: session.id, agentInstanceId: session.agentInstanceId });
-    this.transport.send(createServerHello(hello, session, this.sessions.options.heartbeatIntervalMs / 1000));
+    if (this.authentication) {
+      const resume = this.authentication.tickets.issue({ kind: "resume", agentInstanceId: session.agentInstanceId,
+        sessionId: session.id, capabilities: session.capabilities });
+      this.transport.send(createAuthenticatedServerHello(hello, session, this.sessions.options.heartbeatIntervalMs / 1000, resume));
+      if (this.durability) void this.durability.appendAudit({ eventId: randomUUID(), occurredAt: this.clock.now().toISOString(),
+        eventType: "session.authenticated", sessionId: session.id, requestId: "", capabilityId: "", status: "active" });
+    } else this.transport.send(createServerHello(hello, session, this.sessions.options.heartbeatIntervalMs / 1000));
   }
-  private handleResume(raw: IncomingEnvelope): void {
+  private async handleResume(raw: IncomingEnvelope): Promise<void> {
     const validation = validateSessionMessage("session.resume.request", raw);
     if (!validation.valid) { this.reject("invalid_message", "Resume request is invalid.", raw.messageId); return; }
-    const payload = raw.payload as { agentInstanceId: string; resumeToken: string };
-    const session = this.sessions.resume(String(raw.sessionId), payload.agentInstanceId, payload.resumeToken);
+    const payload = raw.payload as { agentInstanceId: string; resumeToken?: string };
+    const authenticated = this.authentication?.claims.kind === "resume" && this.authentication.claims.sessionId === raw.sessionId &&
+      this.authentication.claims.agentInstanceId === payload.agentInstanceId;
+    const session = authenticated ? this.sessions.resumeAuthenticated(String(raw.sessionId), payload.agentInstanceId) :
+      this.sessions.resume(String(raw.sessionId), payload.agentInstanceId, payload.resumeToken ?? "");
     if (!session) { this.reject("resume_rejected", "Session cannot be resumed.", raw.messageId); return; }
     this.sessionId = session.id;
     this.connections.register(session.id, this.transport);
+    if (this.durability) {
+      await this.durability.persistSessionState(session);
+      await this.durability.appendAudit({ eventId: randomUUID(), occurredAt: this.clock.now().toISOString(), eventType: "session.resumed",
+        sessionId: session.id, requestId: "", capabilityId: "", status: "active" });
+    }
     logEvent("info", "session_resumed", { sessionId: session.id, agentInstanceId: session.agentInstanceId });
+    const next = authenticated ? this.authentication!.tickets.issue({ kind: "resume", agentInstanceId: session.agentInstanceId,
+      sessionId: session.id, capabilities: session.capabilities }) : undefined;
     this.transport.send({ protocolVersion: "1.0", messageId: randomUUID(), messageType: "session.resume.result", sessionId: session.id,
       correlationId: raw.messageId, timestamp: this.clock.now().toISOString(), expiresAt: session.expiresAt.toISOString(),
-      payload: { accepted: true, developmentOnly: true } });
+      payload: next ? { accepted: true, developmentOnly: false, authentication: "support_invitation", resumeTicket: next.ticket,
+        resumeTicketExpiresAt: next.expiresAt.toISOString() } : { accepted: true, developmentOnly: true } });
   }
   private async handleHeartbeat(raw: IncomingEnvelope): Promise<void> {
     try {
@@ -105,6 +131,7 @@ export class RealtimeSessionController {
     try {
       await this.observations.authorityLostDurable(this.sessionId!, "session_closed");
       const session = this.sessions.close(this.sessionId!);
+      this.authentication?.tickets.revokeSession(session.id);
       if (this.durability) await this.durability.persistSessionState(session, "closed");
       this.endedCleanly = true;
       logEvent("info", "session_closed", { sessionId: session.id });

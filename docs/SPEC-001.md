@@ -1,5 +1,7 @@
 # SPEC-001 — Fundação e visão do Master Support
 
+FOUNDATION-006 acrescenta trust bootstrap operacional sem criar identidade permanente de Asset: TLS validado, SupportInvitation de uso único, ConnectionTicket/ResumeTicket opacos e rotativos, revogação, TTL e rejeição de replay. O histórico PostgreSQL não restaura autoridade após restart. `system.runtime.summary@1.0` permanece a única capability.
+
 - Status: Baseline aceita na GATE-000
 - Versão: 0.1
 - Escopo desta versão: arquitetura e requisitos; sem implementação funcional
