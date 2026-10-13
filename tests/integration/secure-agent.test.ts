@@ -11,13 +11,16 @@ import { migrate, requireSafeTestDatabase } from "../../apps/server/src/persiste
 import { PostgresPersistence } from "../../apps/server/src/persistence/postgres.js";
 import { systemClock } from "../../apps/server/src/session/clock.js";
 import { SupportInvitationRepository, SupportInvitationService } from "../../apps/server/src/trust/invitation.js";
+import { AssetRegistryRepository } from "../../apps/server/src/asset/repository.js";
+import { AssetReviewService } from "../../apps/server/src/asset/service.js";
 
-test("real .NET Agent performs two durable Windows preflights over authenticated TLS/WSS", async () => isolated(async url => {
+test("real .NET Agent requires HumanReview across same-hostname Sessions and keeps Asset history over authenticated TLS/WSS", async () => isolated(async url => {
   const certs = await mkdtemp(join(tmpdir(), "master-support-tls-"));
   try {
     const agentDll = fileURLToPath(new URL("../../apps/agent/src/bin/Debug/net10.0/MasterSupport.Agent.dll", import.meta.url));
     const generated = await run("dotnet", [agentDll, "generate-test-certificates", certs]); assert.equal(generated.code, 0, generated.stderr);
-    const durability = await PostgresPersistence.start(url); const repository = await SupportInvitationRepository.start(url);
+    const durability = await PostgresPersistence.start(url); const repository = await SupportInvitationRepository.start(url);const assetRepository=await AssetRegistryRepository.start(url);
+    const assets=new AssetReviewService(assetRepository,systemClock);
     const invitations = new SupportInvitationService(repository, systemClock, 60_000);
     const context = buildApp({ mode: "secure", invitations, durability, exposeDevelopmentSessions: true,
       https: { cert: await readFile(join(certs, "server-cert.pem")), key: await readFile(join(certs, "server-key.pem")) } });
@@ -29,7 +32,10 @@ test("real .NET Agent performs two durable Windows preflights over authenticated
         { MASTER_SUPPORT_TEST_CA_CERT_PATH: join(certs, "ca.pem") });
       await waitFor(() => context.store.list()[0]?.state === "active");
       const session = context.store.list()[0]!; assert.equal(session.authenticated, true); assert.equal(session.capabilities.length, 5);
-      const first = await context.preflights.start(session.id); const second = await context.preflights.start(session.id);
+      const first = await context.preflights.start(session.id);assert.equal((await assets.listUnreviewed()).length,1);
+      const reviewed=await assets.createAssetFromObservedEndpoint({observedEndpointId:first.observedEndpoint!.observedEndpointId,displayName:"Endpoint Demo",
+        externalInventoryId:"LAB-PC-001",review:AssetReviewService.localReview()});
+      const second = await context.preflights.start(session.id);
       assert.equal(first.status, "completed"); assert.equal(first.snapshot?.observationIds.length, 5); assert.equal(first.snapshot?.completenessPercent, 100);
       assert.ok(first.observedEndpoint); assert.notEqual(first.preflightRunId, second.preflightRunId);
       assert.equal(first.observedEndpoint?.observedEndpointId, second.observedEndpoint?.observedEndpointId);
@@ -38,7 +44,19 @@ test("real .NET Agent performs two durable Windows preflights over authenticated
       const result = await running;
       assert.equal(result.code, 0, result.stderr); assert.match(result.stdout, /Connected/); assert.match(result.stdout, /Heartbeat OK/);
       assert.equal(context.store.list().length, 1); assert.equal(context.store.list()[0]?.capabilities[0]?.id, "system.runtime.summary");
-    } finally { await context.app.close(); await repository.close(); }
+      assert.equal(new Set((await assets.history(reviewed.asset.assetId)).map(row=>row["preflight_run_id"])).size,2);
+
+      const nextInvitation=await invitations.create();const nextCode=`${nextInvitation.invitationId}.${nextInvitation.secret}`;
+      const nextRunning=run("dotnet",[agentDll,"connect",`https://localhost:${address.port}/`,"4"],nextCode,{MASTER_SUPPORT_TEST_CA_CERT_PATH:join(certs,"ca.pem")});
+      await waitFor(()=>context.store.list().filter(item=>item.state==="active").length===1);
+      const nextSession=context.store.list().find(item=>item.state==="active")!;assert.notEqual(nextSession.id,session.id);
+      const nextPreflight=await context.preflights.start(nextSession.id);assert.notEqual(nextPreflight.observedEndpoint?.observedEndpointId,first.observedEndpoint?.observedEndpointId);
+      const pending=await assets.listUnreviewed();assert.equal(pending.length,1);assert.equal(pending[0]?.observedMachineName,first.observedEndpoint?.observedMachineName);
+      assert.equal((await assets.listAssets()).length,1);
+      await assets.linkObservedEndpoint({assetId:reviewed.asset.assetId,observedEndpointId:nextPreflight.observedEndpoint!.observedEndpointId,review:AssetReviewService.localReview()});
+      assert.equal((await assets.listUnreviewed()).length,0);assert.equal(new Set((await assets.history(reviewed.asset.assetId)).map(row=>row["session_id"])).size,2);
+      const nextResult=await nextRunning;assert.equal(nextResult.code,0,nextResult.stderr);assert.equal((await assets.listAssets()).length,1);
+    } finally { await context.app.close(); await repository.close();await assetRepository.close(); }
   } finally { await rm(certs, { recursive: true, force: true }); }
 }));
 

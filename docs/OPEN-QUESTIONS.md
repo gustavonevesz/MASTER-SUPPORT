@@ -1,15 +1,17 @@
 # Questões abertas relevantes
 
+OQ-002 foi resolvida para o inventário operacional pela ADR-014: somente `HumanReview` explícito cria o vínculo, sem prova automática por hostname ou fingerprint. A autenticação corporativa do operador e uma prova criptográfica futura do equipamento continuam abertas; `local_operator` é uma atribuição honesta, não identidade verificável.
+
 OQ-001 foi resolvida pela ADR-012 para Support Session temporária: TLS + convite single-use + tickets opacos rotativos. Permanecem abertas identidade permanente de Asset/Managed Endpoint, distribuição operacional do código, PKI/certificados de produção, tolerância formal de clock, auditoria resistente a adulteração e rate limiting distribuído.
 
-OQ-005 foi resolvida para a primeira fatia pela ADR-013: runtime, OS, memória física, volumes fixos locais e contexto mínimo de execução. Expansão desse catálogo exige finalidade e política próprias. OQ-002 continua aberta: `ObservedEndpoint` e hostname não são identidade persistente.
+OQ-005 foi resolvida para a primeira fatia pela ADR-013: runtime, OS, memória física, volumes fixos locais e contexto mínimo de execução. Expansão desse catálogo exige finalidade e política próprias. OQ-002 possui resolução operacional limitada pela ADR-014; identidade corporativa e atestação continuam abertas.
 
 Estas questões podem alterar segurança, protocolo ou modelo; não devem ser resolvidas por conveniência silenciosa.
 
 | ID | Questão | Por que importa | Momento de decisão |
 |---|---|---|---|
 | OQ-001 | Qual é o bootstrap de confiança de produção e como o técnico transfere autorização sem depender do resume token dev-only? | identidade/replay/usabilidade | antes de sair de loopback |
-| OQ-002 | Qual prova define identidade do endpoint temporário sem confundi-la com identidade persistente do Asset? | impersonação e deduplicação | contracts/skeleton |
+| OQ-002 | HumanReview define a associação operacional; qual atestação futura prova o equipamento e qual identidade corporativa prova o revisor? | impersonação e deduplicação | antes do piloto/Managed Endpoint |
 | OQ-003 | WebSocket em Trial atende proxies corporativos, TLS, backpressure e redes reais antes de promoção? | transporte e operação | antes do piloto |
 | OQ-004 | Qual política exata governa Job em execução quando sessão expira/fecha ou conectividade cai? | efeitos parciais e segurança | antes do executor mutável |
 | OQ-005 | Quais capabilities compõem o Preflight mínimo sem coletar dados pessoais/segredos em excesso? | privacidade e diagnóstico | primeira fatia |

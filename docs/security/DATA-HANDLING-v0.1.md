@@ -1,5 +1,9 @@
 # Tratamento de dados v0.1
 
+## Asset Registry
+
+`AssetId`, `ExternalInventoryId`, `DisplayName`, `ObservedMachineName` e decisões de `HumanReview` são `INTERNAL`. A lista de revisão usa somente metadados do endpoint e fatos já minimizados do último Preflight; não copia Evidence RAW. Assets, links e AuditEvents não possuem campos para payload, segredo, ticket, username, SID ou e-mail. Nenhum desses dados vira automaticamente `AI-SAFE`, e confirmação do Asset não muda a classificação ou provenance das Observations.
+
 ## Classificação do Preflight
 
 OS/build/arquiteturas, uptime, capacidade de RAM e capacidade de storage são dados operacionais `MINIMIZED`. `ObservedMachineName`, raiz do volume, `isElevated`, modo e nível de privilégio são `INTERNAL`. Nenhum campo é automaticamente `AI-SAFE`. Evidence chega como RAW efêmera; uma allowlist estrutural valida coerência e produz a Observation persistida. Username, SID, domínio, rede, serial, processos, nomes de arquivos, credenciais e tickets são excluídos.

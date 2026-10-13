@@ -1,5 +1,9 @@
 # Roadmap v0.1
 
+FOUNDATION-008 concluída: Asset Registry `WindowsEndpoint`, revisão local humana explícita, ExternalInventoryId opcional, vínculo/correção auditados, current view derivada e histórico navegável. Não há correlação automática, UI Web, identidade corporativa, Action/Job mutável ou IA.
+
+Recomendação para CORE-001, ainda não iniciado: definir em gate próprio um caso de uso read-only de consulta operacional de Asset e timeline, com autenticação/autorização corporativa do operador antes de qualquer exposição não local. Manter Actions/Jobs mutáveis, IA, matching automático e Managed Endpoint fora do escopo até ADRs e políticas específicas.
+
 FOUNDATION-007 concluída: Preflight Windows real, composto por cinco capabilities R0, com minimização, provenance, lifecycle durável, snapshot por referências e ObservedEndpoint por Session. Asset permanente, correlação automática, diagnóstico, IA e ações mutáveis continuam fora do escopo.
 
 FOUNDATION-006 concluída: bootstrap HTTPS, WSS autenticado, SupportInvitation durável single-use, tickets efêmeros single-use/rotativos, validação TLS real, replay/revogação/TTL e separação segura entre modo operacional e dev. Nenhuma capability, identidade de Asset, UI ou ação mutável foi adicionada. A próxima etapa deve ser definida em gate próprio; não está iniciada aqui.
@@ -48,9 +52,9 @@ Status: concluída. Bootstrap autenticado de Support Session, credenciais curtas
 
 Status: concluída. Cinco capabilities R0, PreflightRun/Snapshot duráveis, ObservedEndpoint por Session, minimização e teste real Windows/PostgreSQL/TLS.
 
-## FOUNDATION-008 — recomendação
+## FOUNDATION-008 — concluída
 
-Definir revisão humana e confirmação explícita antes de criar Asset Registry. Deve preservar ObservedEndpoint como observação, proibir correlação automática por hostname/fingerprint e continuar sem ação mutável até um gate próprio.
+Revisão humana e confirmação explícita implementadas antes da identidade operacional de Asset. ObservedEndpoint permanece observação, correlação automática é proibida e nenhuma ação mutável foi criada.
 
 ## VERTICAL-001 — Read-only Preflight
 

@@ -1,5 +1,11 @@
 # Arquitetura conceitual v0.1
 
+## Asset Registry confirmado por humano
+
+O módulo `asset` expõe `AssetReviewService`; a CLI é somente adapter local. O repositório PostgreSQL executa `Asset + AssetEndpointLink + AuditEvent` na mesma transação e usa índice parcial único para arbitrar concorrência. A consulta de pendentes deriva `ObservedEndpoint` sem vínculo ativo e reúne somente fatos de Observations minimizadas do último Preflight concluído/parcial. A current view deriva o endpoint ativo mais recentemente observado e seu último Preflight, sem duplicar Observation no Asset.
+
+O fluxo não participa do handshake, ticket, lease, revogação ou registry de capabilities. Uma confirmação humana não adiciona autoridade à Session e não eleva provenance da Evidence. Não há interface administrativa pública nem matching automático.
+
 ## Preflight read-only implementado
 
 O `PreflightService` do Control Plane orquestra sequencialmente as cinco capabilities R0 negociadas usando o Observation Backbone existente. `Completed` exige cinco Observations válidas; `Partial` exige ao menos uma; `Failed` não possui nenhuma; perda de autoridade produz `Cancelled`. Restart converte execução antiga em `Interrupted` e nunca redispara trabalho.

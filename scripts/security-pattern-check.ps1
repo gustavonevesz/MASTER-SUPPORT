@@ -23,7 +23,10 @@ $agentForbidden = @(
     'cmd\.exe',
     'System\.Management',
     'Microsoft\.PowerShell',
-    'Process\.Start'
+    'Process\.Start',
+    '\bSystem\.Management\.ManagementObject\b',
+    '\bMicrosoft\.Management\.Infrastructure\b',
+    '\bMicrosoft\.Win32\.Registry(Key|Hive|View)?\b'
 )
 foreach ($pattern in $agentForbidden) {
     $matches = $agentOperationalFiles | Select-String -Pattern $pattern

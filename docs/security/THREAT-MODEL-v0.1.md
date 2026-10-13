@@ -1,5 +1,9 @@
 # Threat model v0.1
 
+## Asset Registry confirmado por humano (FOUNDATION-008)
+
+Hostname spoofing pode induzir o operador, que também pode vincular ou aposentar o equipamento errado. Criação duplicada, DisplayName malicioso, colisão de ExternalInventoryId, corrida de confirmação, reatribuição não autorizada e adulteração de histórico são ameaças explícitas. Mitigações atuais: nenhuma correlação automática; confirmação final humana; entradas limitadas; queries parametrizadas; unicidade no banco; transações; um vínculo ativo por endpoint; correção por revogação + relink; e AuditEvents sanitizados. Uma futura UI deverá aplicar output encoding. `local_operator` não é identidade corporativa verificável, e administrador do banco ainda pode adulterar histórico.
+
 ## Ameaças específicas do Preflight
 
 Hostname spoofing, falsificação de memória/disco por endpoint comprometido, metadata de filesystem maliciosa, enumeração excessiva de volumes, payload oversized, disclosure/fingerprinting, falsa correlação de identidade e Observations envenenadas permanecem dados não confiáveis. As mitigações atuais são provenance explícita, schemas, allowlists determinísticas, máximo de 32 volumes fixos locais, limite de payload, classificação, ausência de Asset automático e separação de RAW Evidence. Uma Session autenticada autoriza atendimento; não torna verdadeiros os fatos fornecidos por um Agent comprometido.

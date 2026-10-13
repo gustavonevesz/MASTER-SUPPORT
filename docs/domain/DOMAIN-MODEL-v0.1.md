@@ -1,5 +1,11 @@
 # Modelo de domínio v0.1
 
+## Asset e AssetEndpointLink implementados
+
+`Asset` possui UUID gerado pelo sistema, `AssetType=WindowsEndpoint`, `DisplayName`, `ExternalInventoryId` opcional e único, status `Active|Retired` e timestamps. `AssetEndpointLink` é a decisão humana persistida: identifica Asset e ObservedEndpoint, registra `HumanReview`, ator transitório `local_operator`, instante e status `Active|Revoked`. Um endpoint tem no máximo um vínculo ativo; um Asset pode reunir vários endpoints ao longo das Sessions.
+
+Correção nunca edita o alvo histórico: revoga o link anterior e cria outro na mesma transação, com razão e AuditEvents. Asset aposentado continua consultável e bloqueia novos links. Current view é projeção derivada; a navegação histórica segue Asset → links → ObservedEndpoints → Sessions → PreflightRuns → Observations. Nenhum fato observado concede identidade automaticamente.
+
 ## PreflightRun, PreflightSnapshot e ObservedEndpoint
 
 `PreflightRun` é uma execução temporal vinculada a uma Support Session autenticada e percorre `Running` até `Completed`, `Partial`, `Failed`, `Cancelled` ou, por reconciliação de restart, `Interrupted`. Cada capability mantém sua própria ObservationRequest e falha; o estado agregado nunca inventa dados ausentes.
@@ -94,4 +100,4 @@ erDiagram
 
 ## Ainda não decidido
 
-Semântica exata de identidade de Asset, cardinalidade Incident–Session, enumerações finais, retenção/expurgo, formato de evidências grandes e fronteira entre Action/Job continuam abertos. As transações da FOUNDATION-005 cobrem somente invariantes locais do backbone de Observation descritas na ADR-011.
+Autenticação corporativa do operador, atestação criptográfica de equipamento, cardinalidade Incident–Session, retenção/expurgo, formato de evidências grandes e fronteira entre Action/Job continuam abertos. As transações da FOUNDATION-008 cobrem somente criação, vínculo, correção e retirement do Asset Registry descritos na ADR-014.

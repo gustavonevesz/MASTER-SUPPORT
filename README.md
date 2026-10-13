@@ -1,5 +1,11 @@
 # Master Support
 
+## Asset Registry confirmado por humano (FOUNDATION-008)
+
+`ObservedEndpoint` continua sendo apenas uma observação por Support Session. Um `Asset` `WindowsEndpoint` só nasce, ou recebe novo vínculo, depois de `HumanReview` explícito pelo ator honesto `local_operator`. Hostname, OS, RAM, storage, arquitetura, runtime, IP, MAC, fingerprint e similaridade nunca fazem correlação automática. `AssetEndpointLink` mantém um único vínculo ativo por endpoint e preserva correções como revogação + novo vínculo auditado.
+
+Com PostgreSQL migrado e `MASTER_SUPPORT_DATABASE_URL` definido, use `npm run asset:review`. A CLI local lista endpoints não revisados e um resumo minimizado do último Preflight, permite criar Asset ou selecionar um existente e exige `YES` antes da transação final. `ExternalInventoryId` é opcional e único sem distinguir maiúsculas; Asset aposentado permanece consultável e rejeita novos vínculos. Essa identidade operacional não amplia autoridade da Session nem torna Evidence confiável ou `AI-SAFE`.
+
 ## Preflight Windows read-only (FOUNDATION-007)
 
 Uma Support Session autenticada e ativa pode executar um Preflight composto, sequencial e exclusivamente R0 com cinco capabilities: `system.runtime.summary@1.0`, `windows.os.summary@1.0`, `windows.memory.summary@1.0`, `windows.storage.summary@1.0` e `windows.execution-context.summary@1.0`. Os handlers C# usam APIs .NET e a chamada Win32 específica `GlobalMemoryStatusEx`; não usam shell, PowerShell, WMI, CIM, Registry ou processo externo.
@@ -18,7 +24,7 @@ Master Support é a futura plataforma inteligente de helpdesk e administração 
 
 ## Estado atual
 
-O repositório contém a **FOUNDATION-007**: contratos JSON Schema, Control Plane TypeScript, Agent C#, Support Session autenticada e Preflight Windows read-only durável em PostgreSQL. Requests são registradas antes do dispatch, resultados aceitos são gravados transacionalmente e um restart reconcilia trabalho incerto sem restaurar autoridade nem reexecutar requests. Ainda não constitui um produto operacional.
+O repositório contém a **FOUNDATION-008**: contratos JSON Schema, Control Plane TypeScript, Agent C#, Support Session autenticada, Preflight Windows read-only e Asset Registry confirmado por humano, duráveis em PostgreSQL. Requests e revisões são gravadas transacionalmente; restart preserva o histórico sem restaurar autoridade nem reexecutar requests. Ainda não constitui um produto operacional.
 
 O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidores, Linux, impressoras, scanners, gerenciamento persistente, IA autônoma e ML permanecem fora do primeiro incremento.
 
@@ -118,4 +124,4 @@ Cancelamento explícito usa `POST /dev/sessions/:sessionId/observations/:request
 
 ## Regra de evolução
 
-Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A recomendação para `FOUNDATION-008` é desenhar revisão humana e confirmação explícita de identidade antes de qualquer Asset Registry, sem correlação automática por hostname/fingerprint e sem ação mutável. Ela não faz parte desta entrega.
+Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A FOUNDATION-008 conclui a fase Foundation. CORE-001 permanece apenas recomendado no roadmap e exige novo gate; não foi iniciado.

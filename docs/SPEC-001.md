@@ -1,5 +1,9 @@
 # SPEC-001 — Fundação e visão do Master Support
 
+## Estado implementado na FOUNDATION-008
+
+FR-012 possui a primeira implementação restrita a `AssetType=WindowsEndpoint`, status `Active|Retired`, UUID imutável, nome operacional e identificador externo opcional/único. `ObservedEndpoint` nunca vira `Asset` automaticamente: `AssetEndpointLink` exige `HumanReview/local_operator`; uma constraint permite somente um vínculo ativo por endpoint, enquanto um Asset reúne vários endpoints. Criação e correção são transacionais e auditadas. Não existe matching, suggestion engine, hard delete, reativação, Web UI, Job ou Action mutável.
+
 FOUNDATION-007 acrescenta Preflight Windows read-only sem criar identidade permanente de Asset: cinco capabilities R0, lifecycle durável, minimização, provenance, snapshot por referências e ObservedEndpoint por Session. O histórico PostgreSQL não restaura autoridade nem reexecuta Preflight após restart.
 
 - Status: Baseline aceita na GATE-000

@@ -14,6 +14,7 @@
     "db:validate-test": "tsx src/persistence/validate-test-database-cli.ts",
     "support:invite": "tsx src/trust/invite-cli.ts",
     "support:revoke-invite": "tsx src/trust/revoke-cli.ts",
+    "asset:review": "tsx src/asset/review-cli.ts",
     "test": "node --import tsx --test test/*.test.ts ../../tests/integration/*.test.ts ../../tests/spikes/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
