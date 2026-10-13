@@ -1,0 +1,8 @@
+export type Page<T>={items:T[];page:number;pageSize:number;total:number;totalPages:number};
+export type AssetSummary={assetId:string;displayName:string;externalInventoryId?:string;assetType:string;status:"Active"|"Retired";lastObservedAt?:string;latestPreflightStatus?:string;knownState?:string};
+export type EndpointSummary={observedEndpointId:string;observedMachineName?:string;platform:string;firstObservedAt:string;lastObservedAt:string;linkStatus:string;confirmationMethod:string;sessionId:string};
+export type PreflightSummary={preflightRunId:string;sessionId:string;observedEndpointId:string;capturedAt:string;status:string;completenessPercent?:number;observationCount:number;factsByCapability:Record<string,unknown>};
+export type AssetDetail={asset:AssetSummary;identity:{state:string;method:string};latestObservedEndpoint?:EndpointSummary;latestPreflight?:PreflightSummary;endpoints:EndpointSummary[]};
+export type TimelineEvent={eventId:string;occurredAt:string;kind:string;title:string;detail?:string;sessionId?:string;preflightRunId?:string;observedEndpointId?:string};
+export type SessionSummary={sessionId:string;historicalStatus:string;agentVersion?:string;protocolVersion:string;createdAt:string;lastSeenAt:string;endedAt?:string;endReason?:string;observedEndpoint?:{observedEndpointId:string;observedMachineName?:string};asset?:{assetId:string;displayName:string;externalInventoryId?:string}};
+export type UnreviewedEndpoint={observedEndpointId:string;observedMachineName?:string;platform:string;firstObservedAt:string;lastObservedAt:string;reviewState:string;latestPreflight?:PreflightSummary};

@@ -1,5 +1,7 @@
 # Questões abertas relevantes
 
+CORE-001 resolveu OQ-018 apenas para a console local: uma projeção allowlisted de DTOs operacionais pode chegar ao Browser; RAW Evidence, secrets e payloads internos continuam proibidos. Permanecem abertas autenticação corporativa, RBAC, retenção, publicação segura, proteção CSRF para qualquer mutação futura e a fonte confiável de presença `ONLINE NOW`.
+
 OQ-002 foi resolvida para o inventário operacional pela ADR-014: somente `HumanReview` explícito cria o vínculo, sem prova automática por hostname ou fingerprint. A autenticação corporativa do operador e uma prova criptográfica futura do equipamento continuam abertas; `local_operator` é uma atribuição honesta, não identidade verificável.
 
 OQ-001 foi resolvida pela ADR-012 para Support Session temporária: TLS + convite single-use + tickets opacos rotativos. Permanecem abertas identidade permanente de Asset/Managed Endpoint, distribuição operacional do código, PKI/certificados de produção, tolerância formal de clock, auditoria resistente a adulteração e rate limiting distribuído.

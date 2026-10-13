@@ -69,6 +69,9 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 | T-041 | PostgreSQL indisponível causa operação sem trilha durável (D/R) | alto | startup e novo dispatch fail-closed, métrica de falha, transaction rollback; não inventar resultado em andamento |
 | T-042 | ServerInstance antiga ou SessionRecord ressuscita autoridade após restart (S/E) | crítico | UUID por processo, reconciliação antes do listen, store vivo vazio, token não persistido e novo handshake obrigatório |
 | T-043 | Replay/duplicata após restart reexecuta request conhecida (T/D) | alto | requestId durável único, nenhum redispatch no recovery, não terminais abandonadas com outcome desconhecido |
+| T-044 | Console sem autenticação é exposta na LAN (S/I) | crítico | bind literal `127.0.0.1` no Web e Control Plane; configuração diferente falha no startup; sem deploy nesta etapa |
+| T-045 | API envia RAW, segredo ou coluna nova por serialização acidental (I) | alto | DTOs explícitos, projeção allowlisted de facts, testes com canary e ausência de tabelas cruas |
+| T-046 | Conteúdo operacional injetado executa script no Browser (T/I) | alto | escaping do React, CSP, `nosniff`, frame denial, referrer policy e nenhuma renderização de HTML arbitrário |
 
 ## Cenários de abuso prioritários
 

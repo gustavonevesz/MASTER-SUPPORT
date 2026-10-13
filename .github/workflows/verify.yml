@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  foundation:
+  core:
     runs-on: windows-latest
     env:
       PGPASSWORD: master_support_ci_only

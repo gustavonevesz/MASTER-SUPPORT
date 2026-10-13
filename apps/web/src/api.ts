@@ -1,0 +1,2 @@
+export class ApiError extends Error{public constructor(public readonly status:number){super(status===404?"Registro não encontrado.":"Não foi possível carregar os dados operacionais.");}}
+export async function api<T>(path:string,signal?:AbortSignal):Promise<T>{const response=await fetch(path,{headers:{Accept:"application/json"},...(signal?{signal}:{})});if(!response.ok)throw new ApiError(response.status);return response.json() as Promise<T>;}

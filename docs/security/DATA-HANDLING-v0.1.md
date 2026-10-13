@@ -1,5 +1,9 @@
 # Tratamento de dados v0.1
 
+## Operator Console
+
+O Browser recebe apenas DTOs de leitura com identidade de Asset, metadados de endpoint/session, resumo de Preflight e eventos humanos de timeline. `factsByCapability` é reprojetado por allowlist própria da console; campos desconhecidos são descartados mesmo quando presentes numa Observation minimizada. Evidence RAW, payload interno, SupportInvitation, hashes, ConnectionTicket e ResumeTicket nunca são serializados. A SPA não usa `localStorage` ou `sessionStorage`, não envia dados a IA e não promove nenhum valor a `AI-SAFE`.
+
 ## Asset Registry
 
 `AssetId`, `ExternalInventoryId`, `DisplayName`, `ObservedMachineName` e decisões de `HumanReview` são `INTERNAL`. A lista de revisão usa somente metadados do endpoint e fatos já minimizados do último Preflight; não copia Evidence RAW. Assets, links e AuditEvents não possuem campos para payload, segredo, ticket, username, SID ou e-mail. Nenhum desses dados vira automaticamente `AI-SAFE`, e confirmação do Asset não muda a classificação ou provenance das Observations.

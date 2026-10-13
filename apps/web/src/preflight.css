@@ -1,0 +1,6 @@
+.preflight-list details { border-bottom: 1px solid #edf1f3; padding: 12px 18px; }
+.preflight-list summary { cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; list-style: none; }
+.preflight-list summary > span:first-child { display: flex; flex-direction: column; gap: 4px; }
+.preflight-list summary small { color: #74828d; font-size: 10px; }
+.preflight-detail { display: grid; gap: 7px; padding: 12px 0 2px; color: #63717d; font-size: 11px; }
+.preflight-detail a { color: #0d8f84; font-weight: 700; }

@@ -1,5 +1,13 @@
 # Master Support
 
+## Operator Console local (CORE-001)
+
+`apps/web` contém a primeira superfície humana: uma React SPA read-only para Assets, detalhe, Preflights, timeline, Sessions e ObservedEndpoints pendentes. O Browser acessa somente a API de DTOs do Control Plane; não acessa PostgreSQL. RAW Evidence, convites, tickets, hashes e campos internos não atravessam essa fronteira.
+
+Sem autenticação corporativa, a console é estritamente local: Server e Web aceitam somente `127.0.0.1`, sem override para LAN. Defina `MASTER_SUPPORT_OPERATOR_CONSOLE=true`, mantenha `MASTER_SUPPORT_HOST=127.0.0.1`, inicie o Server na porta 3000 e execute `npm run dev:web` para a SPA em `http://127.0.0.1:4173`. O comando não abre o browser. `npm run verify:web` executa typecheck, build e testes da UI.
+
+A console não possui mutações. Review de Asset continua em `npm run asset:review`; `LAST OBSERVED` é histórico e nunca é apresentado como `ONLINE NOW`.
+
 ## Asset Registry confirmado por humano (FOUNDATION-008)
 
 `ObservedEndpoint` continua sendo apenas uma observação por Support Session. Um `Asset` `WindowsEndpoint` só nasce, ou recebe novo vínculo, depois de `HumanReview` explícito pelo ator honesto `local_operator`. Hostname, OS, RAM, storage, arquitetura, runtime, IP, MAC, fingerprint e similaridade nunca fazem correlação automática. `AssetEndpointLink` mantém um único vínculo ativo por endpoint e preserva correções como revogação + novo vínculo auditado.
@@ -46,6 +54,7 @@ O primeiro alvo é **Windows Endpoint em Support Session temporária**. Servidor
 - [Threat model](docs/security/THREAT-MODEL-v0.1.md)
 - [Tratamento de dados](docs/security/DATA-HANDLING-v0.1.md)
 - [Índice de decisões](docs/DECISIONS.md)
+- [Marco de encerramento da Foundation](docs/FOUNDATION-COMPLETE.md)
 - [Questões abertas](docs/OPEN-QUESTIONS.md)
 - [Roadmap](docs/ROADMAP-v0.1.md)
 - [Baseline de desenvolvimento](docs/architecture/DEVELOPMENT-BASELINE-v0.1.md)
@@ -124,4 +133,4 @@ Cancelamento explícito usa `POST /dev/sessions/:sessionId/observations/:request
 
 ## Regra de evolução
 
-Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A FOUNDATION-008 conclui a fase Foundation. CORE-001 permanece apenas recomendado no roadmap e exige novo gate; não foi iniciado.
+Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A FOUNDATION-008 concluiu a fase Foundation; CORE-001 estabelece a console local read-only. Etapas posteriores exigem novo gate e não foram iniciadas.

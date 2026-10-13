@@ -48,7 +48,7 @@ try {
     Invoke-Checked dotnet build apps/agent/src/MasterSupport.Agent.csproj --no-restore --configuration Debug
     Invoke-Checked dotnet test apps/agent/test/MasterSupport.Agent.Tests.csproj --no-restore --configuration Debug
 
-    Write-Host '== TypeScript typecheck/build/tests and cross-language round-trip =='
+    Write-Host '== Server and Web typecheck/build/tests, read-only API, UI and cross-language round-trip =='
     Invoke-Checked npm run verify:ts
 
     Write-Host '== Secure bootstrap/TLS/WSS/replay and security patterns =='
@@ -58,7 +58,7 @@ try {
     Write-Host '== Repository checks =='
     Invoke-Checked git diff --check
 
-    Write-Host 'FOUNDATION-008 verification succeeded.'
+    Write-Host 'CORE-001 verification succeeded.'
 }
 finally {
     Pop-Location

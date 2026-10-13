@@ -1,8 +1,16 @@
 # Roadmap v0.1
 
+## FOUNDATION — encerrada
+
+FOUNDATION-001 a FOUNDATION-008 estão concluídas e congeladas no marco `8363890`. O resumo histórico e as invariantes estão em `docs/FOUNDATION-COMPLETE.md`; não existe FOUNDATION-009.
+
+## CORE
+
+CORE-001 materializa a primeira Operator Console: React SPA local, API de leitura com DTOs explícitos, Assets, detalhe, Preflights, timeline, Sessions e endpoints pendentes. Continua sem autenticação corporativa, exposição de rede ou mutação. A etapa seguinte deve tratar identidade/autorização do operador antes de considerar qualquer exposição não-loopback; não deve introduzir Action/Job por consequência implícita.
+
 FOUNDATION-008 concluída: Asset Registry `WindowsEndpoint`, revisão local humana explícita, ExternalInventoryId opcional, vínculo/correção auditados, current view derivada e histórico navegável. Não há correlação automática, UI Web, identidade corporativa, Action/Job mutável ou IA.
 
-Recomendação para CORE-001, ainda não iniciado: definir em gate próprio um caso de uso read-only de consulta operacional de Asset e timeline, com autenticação/autorização corporativa do operador antes de qualquer exposição não local. Manter Actions/Jobs mutáveis, IA, matching automático e Managed Endpoint fora do escopo até ADRs e políticas específicas.
+CORE-001 concluído: consulta operacional local e read-only de Asset e timeline. Autenticação/autorização corporativa continua obrigatória antes de qualquer exposição não local. Actions/Jobs mutáveis, IA, matching automático e Managed Endpoint permanecem fora do escopo até ADRs e políticas específicas.
 
 FOUNDATION-007 concluída: Preflight Windows real, composto por cinco capabilities R0, com minimização, provenance, lifecycle durável, snapshot por referências e ObservedEndpoint por Session. Asset permanente, correlação automática, diagnóstico, IA e ações mutáveis continuam fora do escopo.
 

@@ -8,7 +8,8 @@
     "npm": ">=11 <12"
   },
   "workspaces": [
-    "apps/server"
+    "apps/server",
+    "apps/web"
   ],
   "scripts": {
     "build": "npm run build --workspace @master-support/server",
@@ -19,6 +20,12 @@
     "support:invite": "npm run support:invite --workspace @master-support/server",
     "support:revoke-invite": "npm run support:revoke-invite --workspace @master-support/server --",
     "asset:review": "npm run asset:review --workspace @master-support/server",
-    "verify:ts": "npm run typecheck && npm run build && npm test"
+    "dev:web": "npm run dev --workspace @master-support/web",
+    "build:web": "npm run build --workspace @master-support/web",
+    "test:web": "npm run test --workspace @master-support/web",
+    "typecheck:web": "npm run typecheck --workspace @master-support/web",
+    "verify:server": "npm run typecheck && npm run build && npm test",
+    "verify:web": "npm run typecheck:web && npm run build:web && npm run test:web",
+    "verify:ts": "npm run verify:server && npm run verify:web"
   }
 }

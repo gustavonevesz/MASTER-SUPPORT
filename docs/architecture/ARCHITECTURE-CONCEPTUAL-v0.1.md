@@ -1,5 +1,11 @@
 # Arquitetura conceitual v0.1
 
+## Operator Console do CORE-001
+
+`apps/web` é uma React SPA local. O fluxo obrigatório é `Browser -> Control Plane API -> application service/repository -> PostgreSQL`; não existe conexão Browser/PostgreSQL. O módulo `operator-read` produz DTOs explícitos e pagina Assets, Preflights, timeline e endpoints pendentes. Apenas fatos allowlisted e minimizados atravessam a nova fronteira; RAW Evidence, tickets, convites, hashes, SQL e stacks não pertencem ao contrato.
+
+As duas superfícies fazem bind em `127.0.0.1`. A console não possui autenticação corporativa, portanto qualquer bind não-loopback é recusado e não há deploy. O estado mostrado é histórico (`LAST OBSERVED`); ausência de fonte viva impede inferir `ONLINE NOW`.
+
 ## Asset Registry confirmado por humano
 
 O módulo `asset` expõe `AssetReviewService`; a CLI é somente adapter local. O repositório PostgreSQL executa `Asset + AssetEndpointLink + AuditEvent` na mesma transação e usa índice parcial único para arbitrar concorrência. A consulta de pendentes deriva `ObservedEndpoint` sem vínculo ativo e reúne somente fatos de Observations minimizadas do último Preflight concluído/parcial. A current view deriva o endpoint ativo mais recentemente observado e seu último Preflight, sem duplicar Observation no Asset.

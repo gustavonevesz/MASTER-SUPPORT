@@ -1,6 +1,6 @@
 # Índice de decisões
 
-ADR-014 aceita identidade operacional de Asset somente por `HumanReview` explícito, nunca por correlação automática. Consulte [ADR-014](adr/ADR-014-human-confirmed-asset-identity.md).
+ADR-015 aceita a Operator Console como React SPA estritamente local e read-only. A identidade operacional continua dependendo de `HumanReview` explícito conforme ADR-014.
 
 | ADR | Decisão resumida | Status |
 |---|---|---|
@@ -18,6 +18,7 @@ ADR-014 aceita identidade operacional de Asset somente por `HumanReview` explíc
 | [ADR-012](adr/ADR-012-secure-session-trust-bootstrap.md) | TLS + SupportInvitation single-use + tickets opacos single-use e rotativos | Aceito |
 | [ADR-013](adr/ADR-013-windows-read-only-preflight.md) | Preflight composto, sequencial e durável; ObservedEndpoint por Session não é Asset | Aceito |
 | [ADR-014](adr/ADR-014-human-confirmed-asset-identity.md) | Asset e vínculo nascem somente por HumanReview explícito | Aceito |
+| [ADR-015](adr/ADR-015-local-react-operator-console.md) | React SPA local, read-only e loopback-only; Browser acessa apenas DTOs do Control Plane | Aceito |
 
 Status permitidos: `Proposto`, `Trial`, `Aceito`, `Rejeitado`, `Substituído`. Os seis ADRs iniciais foram aceitos na GATE-000; ADR-007 e ADR-008 foram aceitos na FOUNDATION-001; ADR-009 permanece em Trial. Alterações materiais serão feitas por novo ADR ou revisão explicitamente versionada, preservando histórico no Git.
 

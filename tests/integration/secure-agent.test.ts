@@ -13,16 +13,18 @@ import { systemClock } from "../../apps/server/src/session/clock.js";
 import { SupportInvitationRepository, SupportInvitationService } from "../../apps/server/src/trust/invitation.js";
 import { AssetRegistryRepository } from "../../apps/server/src/asset/repository.js";
 import { AssetReviewService } from "../../apps/server/src/asset/service.js";
+import { OperatorReadRepository } from "../../apps/server/src/operator-read/repository.js";
+import { OperatorReadService } from "../../apps/server/src/operator-read/service.js";
 
 test("real .NET Agent requires HumanReview across same-hostname Sessions and keeps Asset history over authenticated TLS/WSS", async () => isolated(async url => {
   const certs = await mkdtemp(join(tmpdir(), "master-support-tls-"));
   try {
     const agentDll = fileURLToPath(new URL("../../apps/agent/src/bin/Debug/net10.0/MasterSupport.Agent.dll", import.meta.url));
     const generated = await run("dotnet", [agentDll, "generate-test-certificates", certs]); assert.equal(generated.code, 0, generated.stderr);
-    const durability = await PostgresPersistence.start(url); const repository = await SupportInvitationRepository.start(url);const assetRepository=await AssetRegistryRepository.start(url);
+    const durability = await PostgresPersistence.start(url); const repository = await SupportInvitationRepository.start(url);const assetRepository=await AssetRegistryRepository.start(url);const operatorRepository=await OperatorReadRepository.start(url);
     const assets=new AssetReviewService(assetRepository,systemClock);
     const invitations = new SupportInvitationService(repository, systemClock, 60_000);
-    const context = buildApp({ mode: "secure", invitations, durability, exposeDevelopmentSessions: true,
+    const context = buildApp({ mode: "secure", invitations, durability,operatorRead:new OperatorReadService(operatorRepository), exposeDevelopmentSessions: true,
       https: { cert: await readFile(join(certs, "server-cert.pem")), key: await readFile(join(certs, "server-key.pem")) } });
     try {
       await context.app.listen({ host: "127.0.0.1", port: 0 });
@@ -55,8 +57,11 @@ test("real .NET Agent requires HumanReview across same-hostname Sessions and kee
       assert.equal((await assets.listAssets()).length,1);
       await assets.linkObservedEndpoint({assetId:reviewed.asset.assetId,observedEndpointId:nextPreflight.observedEndpoint!.observedEndpointId,review:AssetReviewService.localReview()});
       assert.equal((await assets.listUnreviewed()).length,0);assert.equal(new Set((await assets.history(reviewed.asset.assetId)).map(row=>row["session_id"])).size,2);
+      const webDetail=await context.app.inject({method:"GET",url:`/api/assets/${reviewed.asset.assetId}`});assert.equal(webDetail.statusCode,200);
+      assert.match(webDetail.body,/Endpoint Demo/);assert.match(webDetail.body,/windows\.os\.summary/);assert.doesNotMatch(webDetail.body,/evidence|connectionTicket|resumeTicket|invitationSecret/i);
+      const webTimeline=await context.app.inject({method:"GET",url:`/api/assets/${reviewed.asset.assetId}/timeline`});assert.equal(webTimeline.statusCode,200);assert.match(webTimeline.body,/Observed endpoint linked to Asset/);
       const nextResult=await nextRunning;assert.equal(nextResult.code,0,nextResult.stderr);assert.equal((await assets.listAssets()).length,1);
-    } finally { await context.app.close(); await repository.close();await assetRepository.close(); }
+    } finally { await context.app.close(); await repository.close();await assetRepository.close();await operatorRepository.close(); }
   } finally { await rm(certs, { recursive: true, force: true }); }
 }));
 
