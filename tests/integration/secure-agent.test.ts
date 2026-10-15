@@ -15,17 +15,23 @@ import { AssetRegistryRepository } from "../../apps/server/src/asset/repository.
 import { AssetReviewService } from "../../apps/server/src/asset/service.js";
 import { OperatorReadRepository } from "../../apps/server/src/operator-read/repository.js";
 import { OperatorReadService } from "../../apps/server/src/operator-read/service.js";
+import { OperatorAuthRepository } from "../../apps/server/src/operator-auth/repository.js";
+import { OperatorAuthService } from "../../apps/server/src/operator-auth/service.js";
+import { HarnessOperatorAuthProvider } from "../../apps/server/src/operator-auth/provider.js";
 
 test("real .NET Agent requires HumanReview across same-hostname Sessions and keeps Asset history over authenticated TLS/WSS", async () => isolated(async url => {
   const certs = await mkdtemp(join(tmpdir(), "master-support-tls-"));
   try {
     const agentDll = fileURLToPath(new URL("../../apps/agent/src/bin/Debug/net10.0/MasterSupport.Agent.dll", import.meta.url));
     const generated = await run("dotnet", [agentDll, "generate-test-certificates", certs]); assert.equal(generated.code, 0, generated.stderr);
-    const durability = await PostgresPersistence.start(url); const repository = await SupportInvitationRepository.start(url);const assetRepository=await AssetRegistryRepository.start(url);const operatorRepository=await OperatorReadRepository.start(url);
+    const durability = await PostgresPersistence.start(url); const repository = await SupportInvitationRepository.start(url);const assetRepository=await AssetRegistryRepository.start(url);const operatorRepository=await OperatorReadRepository.start(url);const authRepository=await OperatorAuthRepository.start(url);
     const assets=new AssetReviewService(assetRepository,systemClock);
     const invitations = new SupportInvitationService(repository, systemClock, 60_000);
-    const context = buildApp({ mode: "secure", invitations, durability,operatorRead:new OperatorReadService(operatorRepository), exposeDevelopmentSessions: true,
+    const authService=new OperatorAuthService(authRepository,systemClock);const identity={provider:"test",providerSubject:"secure-agent-reader",displayName:"Integration Reader"};await authService.provision(identity);const issued=await authService.authenticate(identity);
+    const operatorAuth={service:authService,provider:new HarnessOperatorAuthProvider("test",identity),clock:systemClock,publicOrigin:"https://127.0.0.1:4173",secureCookie:true,developmentProvider:false};
+    const context = buildApp({ mode: "secure", invitations, durability,operatorRead:new OperatorReadService(operatorRepository),operatorAuth, exposeDevelopmentSessions: true,
       https: { cert: await readFile(join(certs, "server-cert.pem")), key: await readFile(join(certs, "server-key.pem")) } });
+    context.app.addHook("onRequest",async request=>{if(request.url.startsWith("/api/")&&!request.url.startsWith("/api/auth/"))request.headers.cookie=`ms_operator_session=${issued.token}`;});
     try {
       await context.app.listen({ host: "127.0.0.1", port: 0 });
       const address = context.app.server.address(); assert.ok(address && typeof address !== "string");
@@ -61,7 +67,7 @@ test("real .NET Agent requires HumanReview across same-hostname Sessions and kee
       assert.match(webDetail.body,/Endpoint Demo/);assert.match(webDetail.body,/windows\.os\.summary/);assert.doesNotMatch(webDetail.body,/evidence|connectionTicket|resumeTicket|invitationSecret/i);
       const webTimeline=await context.app.inject({method:"GET",url:`/api/assets/${reviewed.asset.assetId}/timeline`});assert.equal(webTimeline.statusCode,200);assert.match(webTimeline.body,/Observed endpoint linked to Asset/);
       const nextResult=await nextRunning;assert.equal(nextResult.code,0,nextResult.stderr);assert.equal((await assets.listAssets()).length,1);
-    } finally { await context.app.close(); await repository.close();await assetRepository.close();await operatorRepository.close(); }
+    } finally { await context.app.close(); await repository.close();await assetRepository.close();await operatorRepository.close();await authRepository.close(); }
   } finally { await rm(certs, { recursive: true, force: true }); }
 }));
 

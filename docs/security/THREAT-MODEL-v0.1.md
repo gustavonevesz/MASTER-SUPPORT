@@ -1,5 +1,9 @@
 # Threat model v0.1
 
+## Operator authentication and authorization
+
+Mitigações cobrem fixation (nova sessão pós-login), roubo de token (cookie HttpOnly/SameSite e hash-only), CSRF de logout (Origin/Referer + token), open redirect, callback replay (state/nonce/transação single-use), abuso de auth (rate limit), conta não autorizada (preprovisionamento), conta Disabled (revogação imediata) e privilégio indevido (`console.read`, 401 distinto de 403). A console permanece em `127.0.0.1`.
+
 ## Asset Registry confirmado por humano (FOUNDATION-008)
 
 Hostname spoofing pode induzir o operador, que também pode vincular ou aposentar o equipamento errado. Criação duplicada, DisplayName malicioso, colisão de ExternalInventoryId, corrida de confirmação, reatribuição não autorizada e adulteração de histórico são ameaças explícitas. Mitigações atuais: nenhuma correlação automática; confirmação final humana; entradas limitadas; queries parametrizadas; unicidade no banco; transações; um vínculo ativo por endpoint; correção por revogação + relink; e AuditEvents sanitizados. Uma futura UI deverá aplicar output encoding. `local_operator` não é identidade corporativa verificável, e administrador do banco ainda pode adulterar histórico.

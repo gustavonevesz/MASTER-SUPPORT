@@ -1,16 +1,18 @@
 # Roadmap v0.1
 
+CORE-002 concluído: Operator preprovisionado, provider OIDC abstrato, OperatorSession persistente, `console.read`, logout/revogação, auditoria e UI autenticada; a superfície continua loopback-only e read-only.
+
 ## FOUNDATION — encerrada
 
 FOUNDATION-001 a FOUNDATION-008 estão concluídas e congeladas no marco `8363890`. O resumo histórico e as invariantes estão em `docs/FOUNDATION-COMPLETE.md`; não existe FOUNDATION-009.
 
 ## CORE
 
-CORE-001 materializa a primeira Operator Console: React SPA local, API de leitura com DTOs explícitos, Assets, detalhe, Preflights, timeline, Sessions e endpoints pendentes. Continua sem autenticação corporativa, exposição de rede ou mutação. A etapa seguinte deve tratar identidade/autorização do operador antes de considerar qualquer exposição não-loopback; não deve introduzir Action/Job por consequência implícita.
+CORE-001 materializou a primeira Operator Console. CORE-002 adicionou autenticação por provider, OperatorSession e autorização `console.read`, sem exposição de rede ou mutação. Qualquer exposição não-loopback continua exigindo decisão futura; Action/Job não decorre implicitamente desta etapa.
 
 FOUNDATION-008 concluída: Asset Registry `WindowsEndpoint`, revisão local humana explícita, ExternalInventoryId opcional, vínculo/correção auditados, current view derivada e histórico navegável. Não há correlação automática, UI Web, identidade corporativa, Action/Job mutável ou IA.
 
-CORE-001 concluído: consulta operacional local e read-only de Asset e timeline. Autenticação/autorização corporativa continua obrigatória antes de qualquer exposição não local. Actions/Jobs mutáveis, IA, matching automático e Managed Endpoint permanecem fora do escopo até ADRs e políticas específicas.
+CORE-002 concluído: a consulta local e read-only exige identidade preprovisionada e `console.read`. Actions/Jobs mutáveis, exposição remota, IA, matching automático e Managed Endpoint permanecem fora do escopo até ADRs e políticas específicas.
 
 FOUNDATION-007 concluída: Preflight Windows real, composto por cinco capabilities R0, com minimização, provenance, lifecycle durável, snapshot por referências e ObservedEndpoint por Session. Asset permanente, correlação automática, diagnóstico, IA e ações mutáveis continuam fora do escopo.
 

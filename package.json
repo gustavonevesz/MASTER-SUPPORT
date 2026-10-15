@@ -20,6 +20,7 @@
     "support:invite": "npm run support:invite --workspace @master-support/server",
     "support:revoke-invite": "npm run support:revoke-invite --workspace @master-support/server --",
     "asset:review": "npm run asset:review --workspace @master-support/server",
+    "operator:manage": "npm run operator:manage --workspace @master-support/server --",
     "dev:web": "npm run dev --workspace @master-support/web",
     "build:web": "npm run build --workspace @master-support/web",
     "test:web": "npm run test --workspace @master-support/web",

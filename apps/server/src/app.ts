@@ -20,6 +20,7 @@ import { randomUUID } from "node:crypto";
 import { PreflightService } from "./preflight/service.js";
 import type { OperatorReadService } from "./operator-read/service.js";
 import { registerOperatorReadRoutes } from "./operator-read/routes.js";
+import { registerOperatorAuthRoutes, type OperatorAuthRuntime } from "./operator-auth/routes.js";
 
 export type ServerContext = Readonly<{
   app: FastifyInstance;
@@ -48,6 +49,7 @@ export function buildApp(options: {
   resumeTicketTtlMs?: number;
   bootstrapRateLimit?: number;
   operatorRead?: OperatorReadService;
+  operatorAuth?: OperatorAuthRuntime;
 } = {}): ServerContext {
   const mode = options.mode ?? "development";
   if (mode === "secure" && (!options.https || !options.invitations)) throw new Error("secure_mode_requires_tls_and_invitation_store");
@@ -72,7 +74,9 @@ export function buildApp(options: {
   const preflights=new PreflightService(store,observations,clock,options.durability);
   app.get("/health", async () => ({ status: "ok", service: "master-support-server", version: productVersion, protocolVersions: supportedProtocolVersions }));
   app.get("/version", async () => ({ productVersion, protocolVersions: supportedProtocolVersions }));
-  if(options.operatorRead)registerOperatorReadRoutes(app,options.operatorRead);
+  if(options.operatorRead&&!options.operatorAuth)throw new Error("operator_console_requires_authentication");
+  if(options.operatorAuth)registerOperatorAuthRoutes(app,options.operatorAuth);
+  if(options.operatorRead&&options.operatorAuth)registerOperatorReadRoutes(app,options.operatorRead,options.operatorAuth);
   if (mode === "secure") app.post("/support/bootstrap", async (request, reply) => {
     const body = request.body as { invitationId?: unknown; invitationSecret?: unknown; agentHello?: unknown } | undefined;
     const invitationId = typeof body?.invitationId === "string" ? body.invitationId : "invalid";

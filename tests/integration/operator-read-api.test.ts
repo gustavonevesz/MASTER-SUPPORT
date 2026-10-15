@@ -8,6 +8,9 @@ import { OperatorReadRepository } from "../../apps/server/src/operator-read/repo
 import { OperatorReadService } from "../../apps/server/src/operator-read/service.js";
 import { migrate, requireSafeTestDatabase } from "../../apps/server/src/persistence/migrations.js";
 import { FakeClock } from "../../apps/server/src/session/clock.js";
+import { OperatorAuthRepository } from "../../apps/server/src/operator-auth/repository.js";
+import { OperatorAuthService } from "../../apps/server/src/operator-auth/service.js";
+import { HarnessOperatorAuthProvider } from "../../apps/server/src/operator-auth/provider.js";
 
 test("read-only operator API exposes paged, sanitized operational views",async()=>isolated(async url=>{
   const seeded=await seed(url,["SHARED-HOST","SHARED-HOST","PENDING-HOST"]);
@@ -19,7 +22,15 @@ test("read-only operator API exposes paged, sanitized operational views",async()
   await registry.close();
 
   const repository=await OperatorReadRepository.start(url);
-  const context=buildApp({operatorRead:new OperatorReadService(repository),exposeDevelopmentSessions:false});
+  const authRepository=await OperatorAuthRepository.start(url);const clock=new FakeClock(new Date("2026-10-13T12:31:00Z"));const authService=new OperatorAuthService(authRepository,clock);
+  const identity={provider:"test",providerSubject:"reader-1",displayName:"Test Reader"};await authService.provision(identity);const issued=await authService.authenticate(identity);
+  const operatorAuth={service:authService,provider:new HarnessOperatorAuthProvider("test",identity),clock,publicOrigin:"http://127.0.0.1:4173",secureCookie:false,developmentProvider:false};
+  const unauthorized=buildApp({operatorRead:new OperatorReadService(repository),operatorAuth,exposeDevelopmentSessions:false});
+  for(const path of ["/api/assets",`/api/assets/${first.asset.assetId}`,`/api/assets/${first.asset.assetId}/preflights`,`/api/assets/${first.asset.assetId}/timeline`,"/api/unreviewed-endpoints",`/api/sessions/${seeded[0]!.sessionId}`])
+    assert.equal((await unauthorized.app.inject({method:"GET",url:path})).statusCode,401,`${path} requires an OperatorSession`);
+  await unauthorized.app.close();
+  const context=buildApp({operatorRead:new OperatorReadService(repository),operatorAuth,exposeDevelopmentSessions:false});
+  context.app.addHook("onRequest",async request=>{if(request.url.startsWith("/api/")&&!request.url.startsWith("/api/auth/"))request.headers.cookie=`ms_operator_session=${issued.token}`;});
   try{
     const list=await context.app.inject({method:"GET",url:"/api/assets?page=1&pageSize=1&search=workstation"});
     assert.equal(list.statusCode,200);assert.equal(list.headers["x-content-type-options"],"nosniff");assert.match(String(list.headers["content-security-policy"]),/default-src 'none'/);
@@ -50,7 +61,7 @@ test("read-only operator API exposes paged, sanitized operational views",async()
     assert.equal((await context.app.inject({method:"POST",url:"/api/assets",payload:{}})).statusCode,404);
     assert.equal((await context.app.inject({method:"PUT",url:`/api/assets/${first.asset.assetId}`,payload:{}})).statusCode,404);
     assert.equal((await context.app.inject({method:"DELETE",url:`/api/assets/${first.asset.assetId}`})).statusCode,404);
-  }finally{await context.app.close();await repository.close();}
+  }finally{await context.app.close();await repository.close();await authRepository.close();}
 }));
 
 type Seeded=Readonly<{endpointId:string;sessionId:string}>;

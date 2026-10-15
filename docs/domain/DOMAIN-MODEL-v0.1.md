@@ -1,5 +1,9 @@
 # Modelo de domínio v0.1
 
+## Operator e OperatorSession
+
+`Operator` é identidade corporativa preprovisionada, com UUID, Provider, ProviderSubject estável, DisplayName minimizado, status `Active|Disabled` e role opcional `OperatorReader` (`console.read`). `OperatorSession` é a sessão autenticada do Browser, com token opaco irrecuperável do banco, idle/absolute TTL, revogação e término. Não é Asset, Endpoint, AgentInstance, SupportSession nem ServerInstance. Eventos históricos `local_operator` não são reatribuídos.
+
 ## Asset e AssetEndpointLink implementados
 
 `Asset` possui UUID gerado pelo sistema, `AssetType=WindowsEndpoint`, `DisplayName`, `ExternalInventoryId` opcional e único, status `Active|Retired` e timestamps. `AssetEndpointLink` é a decisão humana persistida: identifica Asset e ObservedEndpoint, registra `HumanReview`, ator transitório `local_operator`, instante e status `Active|Revoked`. Um endpoint tem no máximo um vínculo ativo; um Asset pode reunir vários endpoints ao longo das Sessions.

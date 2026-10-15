@@ -1,5 +1,9 @@
 # Tratamento de dados v0.1
 
+## Operator identity
+
+ProviderSubject e DisplayName são `INTERNAL`; OperatorSessionId, token hash e eventos também. Token de sessão, state, nonce, PKCE verifier, authorization code e tokens OIDC são `SECRET` transitórios e nunca logados ou persistidos em claro. E-mail, grupos e dump de claims não são coletados. React mantém DTO mínimo e CSRF em memória, sem Web Storage.
+
 ## Operator Console
 
 O Browser recebe apenas DTOs de leitura com identidade de Asset, metadados de endpoint/session, resumo de Preflight e eventos humanos de timeline. `factsByCapability` é reprojetado por allowlist própria da console; campos desconhecidos são descartados mesmo quando presentes numa Observation minimizada. Evidence RAW, payload interno, SupportInvitation, hashes, ConnectionTicket e ResumeTicket nunca são serializados. A SPA não usa `localStorage` ou `sessionStorage`, não envia dados a IA e não promove nenhum valor a `AI-SAFE`.

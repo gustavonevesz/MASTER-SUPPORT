@@ -1,10 +1,14 @@
 # Arquitetura conceitual v0.1
 
+## Operator identity (CORE-002)
+
+`Browser -> OperatorAuthProvider -> Control Plane BFF -> OperatorSession -> console.read -> operator-read`. OIDC valida issuer/audience/signature/expiry/state/nonce via biblioteca; somente ProviderSubject e DisplayName minimizados entram no domínio. Operator, Asset, Endpoint, AgentInstance, OperatorSession, SupportSession e ServerInstance são distintos. OperatorSession pode sobreviver restart; SupportSession não preserva autoridade.
+
 ## Operator Console do CORE-001
 
 `apps/web` é uma React SPA local. O fluxo obrigatório é `Browser -> Control Plane API -> application service/repository -> PostgreSQL`; não existe conexão Browser/PostgreSQL. O módulo `operator-read` produz DTOs explícitos e pagina Assets, Preflights, timeline e endpoints pendentes. Apenas fatos allowlisted e minimizados atravessam a nova fronteira; RAW Evidence, tickets, convites, hashes, SQL e stacks não pertencem ao contrato.
 
-As duas superfícies fazem bind em `127.0.0.1`. A console não possui autenticação corporativa, portanto qualquer bind não-loopback é recusado e não há deploy. O estado mostrado é histórico (`LAST OBSERVED`); ausência de fonte viva impede inferir `ONLINE NOW`.
+As duas superfícies fazem bind em `127.0.0.1`. A console possui autenticação por provider e autorização `console.read`, mas qualquer bind não-loopback continua recusado e não há deploy. O estado mostrado é histórico (`LAST OBSERVED`); ausência de fonte viva impede inferir `ONLINE NOW`.
 
 ## Asset Registry confirmado por humano
 

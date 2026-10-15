@@ -1,5 +1,11 @@
 # Master Support
 
+## Operator identity and read-only authorization (CORE-002)
+
+The loopback-only console requires a preprovisioned active `Operator`, a valid persistent `OperatorSession`, and `console.read`. Production uses OIDC Authorization Code + PKCE through a BFF; the Browser receives only an opaque HttpOnly cookie and PostgreSQL stores only its hash. `npm run operator:manage -- list|provision|disable|enable` manages operators locally. Development auth is explicit, configured (no built-in user), and restricted to literal `127.0.0.1`.
+
+Production configuration uses `MASTER_SUPPORT_OPERATOR_AUTH_PROVIDER=oidc`, `MASTER_SUPPORT_OIDC_ISSUER`, `MASTER_SUPPORT_OIDC_CLIENT_ID` and `MASTER_SUPPORT_OIDC_CLIENT_SECRET`. The callback is `${MASTER_SUPPORT_OPERATOR_ORIGIN}/auth/callback`. Local development uses `MASTER_SUPPORT_OPERATOR_AUTH_PROVIDER=development`, `MASTER_SUPPORT_DEV_AUTH=true`, and explicitly configured `MASTER_SUPPORT_DEV_OPERATOR_SUBJECT` / `MASTER_SUPPORT_DEV_OPERATOR_DISPLAY_NAME`; that identity still must be provisioned. Idle and absolute TTL default to 30 minutes and 8 hours. ProviderSubject and DisplayName are the only persisted provider claims.
+
 ## Operator Console local (CORE-001)
 
 `apps/web` contém a primeira superfície humana: uma React SPA read-only para Assets, detalhe, Preflights, timeline, Sessions e ObservedEndpoints pendentes. O Browser acessa somente a API de DTOs do Control Plane; não acessa PostgreSQL. RAW Evidence, convites, tickets, hashes e campos internos não atravessam essa fronteira.

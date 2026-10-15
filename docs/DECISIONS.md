@@ -1,9 +1,12 @@
 # Índice de decisões
 
+ADR-016 seleciona OIDC Authorization Code + PKCE como provider de produção, com preprovisionamento, sessão BFF opaca e provider dev/test pelo mesmo contrato.
+
 ADR-015 aceita a Operator Console como React SPA estritamente local e read-only. A identidade operacional continua dependendo de `HumanReview` explícito conforme ADR-014.
 
 | ADR | Decisão resumida | Status |
 |---|---|---|
+| [ADR-016](adr/ADR-016-operator-authentication-strategy.md) | OIDC + PKCE, preprovisionamento, OperatorSession BFF e `console.read` | Aceito |
 | [ADR-001](adr/ADR-001-language-and-runtime-strategy.md) | TypeScript/Node no Control Plane/Web; C#/.NET no Runtime; Python futuro | Aceito |
 | [ADR-002](adr/ADR-002-repository-structure.md) | Monorepo poliglota, monólito modular inicial | Aceito |
 | [ADR-003](adr/ADR-003-agent-session-model.md) | Support Session temporária, outbound e credenciais curtas | Aceito |

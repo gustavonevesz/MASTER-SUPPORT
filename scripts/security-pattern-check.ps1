@@ -10,7 +10,11 @@ $forbidden = @(
     'NODE_TLS_REJECT_UNAUTHORIZED',
     'rejectUnauthorized\s*:\s*false',
     'ServerCertificateCustomValidationCallback\s*=\s*[^;]*=>\s*true',
-    '[?&](token|ticket|secret)='
+    '[?&](token|ticket|secret)=',
+    '\b(localStorage|sessionStorage)\b',
+    'console\.log\s*\([^)]*(token|cookie|claims|authorization)',
+    '(isTest|NODE_ENV\s*===?\s*["'']test)[^\r\n]*(allowAll|authenticated\s*=\s*true)',
+    'origin\s*:\s*["'']\*["'']'
 )
 foreach ($pattern in $forbidden) {
     $matches = $sourceFiles | Select-String -Pattern $pattern
