@@ -36,4 +36,20 @@ foreach ($pattern in $agentForbidden) {
     $matches = $agentOperationalFiles | Select-String -Pattern $pattern
     if ($matches) { $matches | ForEach-Object { Write-Error "Forbidden Agent execution pattern: $($_.Path):$($_.LineNumber)" } }
 }
+$actionOperationalFiles = Get-ChildItem -Path (Join-Path $repoRoot 'apps/server/src/actions') -Recurse -File -Filter '*.ts'
+$actionForbidden = @(
+    'node:child_process',
+    '\b(exec|spawn|eval)\s*\(',
+    '\bFunction\s*\(',
+    'powershell',
+    '\bpwsh\b',
+    'cmd\.exe',
+    'shell\s*:',
+    'unsafe-eval',
+    '[{,]\s*(command|script|executable)\s*:'
+)
+foreach ($pattern in $actionForbidden) {
+    $matches = $actionOperationalFiles | Select-String -Pattern $pattern
+    if ($matches) { $matches | ForEach-Object { Write-Error "Forbidden Action execution pattern: $($_.Path):$($_.LineNumber)" } }
+}
 Write-Host 'Security pattern checks passed.'

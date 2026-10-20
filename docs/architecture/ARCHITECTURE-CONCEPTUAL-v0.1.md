@@ -151,9 +151,9 @@ A fronteira PostgreSQL/WebSocket não é atômica. O registro da request e seu A
 ## Estados mínimos
 
 - Session: `Created → Connecting → Active → Closing → Closed|Expired|Failed`.
-- Action/Approval precedem o Job. O lifecycle mínimo do Job é `Created → Queued → Dispatched → Acknowledged → Running → Succeeded|Failed|TimedOut|Cancelled|Expired`.
+- No CORE-003, ActionRequest imutável precede o Job. O lifecycle centralizado é `Requested → AwaitingApproval → Ready → Executing → Verifying → Succeeded`, com terminais alternativos `Failed`, `Denied`, `Cancelled`, `Expired` e `OutcomeUnknown`.
 
-Transições normais avançam da esquerda para a direita. `Queued` pode terminar em `Cancelled` ou `Expired`; `Dispatched` e `Acknowledged` podem terminar em `Cancelled`, `Expired` ou `TimedOut` conforme política; `Running` termina em `Succeeded`, `Failed`, `TimedOut` ou `Cancelled`. Estados terminais não transitam novamente. Mensagem inválida/incompatível rejeita o dispatch e é auditada; não cria sucesso fictício. Recuperação após falha poderá reconciliar estado observado sem reexecutar automaticamente.
+Cancelamento é aceito somente antes de `Executing`. `Succeeded` exige execução bem-sucedida e Verification `Passed`. Estados terminais não transitam novamente. `Executing` ou `Verifying` encontrados no restart viram `OutcomeUnknown`, sem redispatch; `Ready` conserva a intenção, mas exige policy/approval/operator novamente válidos antes do claim atômico.
 
 `Acknowledged` significa somente recebimento e aceitação inicial. `Succeeded` significa que a execução terminou conforme o contrato técnico da capability; não significa que o problema foi resolvido. Resolution depende de Verification posterior. Um Job é a intenção orquestrada; cada tentativa concreta é uma CommandExecution, portanto um Job pode ter zero ou mais tentativas sem perder seu histórico.
 

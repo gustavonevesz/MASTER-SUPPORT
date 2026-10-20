@@ -1,0 +1,10 @@
+import type { ActionInput } from "./models.js";
+export type ExecutionResult=Readonly<{ok:boolean;code:string}>;
+export type VerificationResult=Readonly<{status:"Passed"|"Failed"|"Inconclusive";code:string}>;
+export interface ActionExecutor{execute(jobId:string,input:ActionInput):Promise<ExecutionResult>}
+export interface ActionVerifier{verify(jobId:string,input:ActionInput):Promise<VerificationResult>}
+export class UnavailableActionExecutor implements ActionExecutor{async execute():Promise<ExecutionResult>{throw new Error("action_execution_unavailable")}}
+export class UnavailableActionVerifier implements ActionVerifier{async verify():Promise<VerificationResult>{throw new Error("action_verification_unavailable")}}
+export class InMemorySimulationState{readonly markers=new Map<string,string>();set(jobId:string,marker:string){this.markers.set(jobId,marker)}get(jobId:string){return this.markers.get(jobId)}}
+export class SimulatedActionExecutor implements ActionExecutor{public constructor(private readonly state:InMemorySimulationState,private readonly scenario:"success"|"execution-fail"|"verification-fail"|"inconclusive"="success"){}async execute(jobId:string,input:ActionInput):Promise<ExecutionResult>{if(this.scenario==="execution-fail")return {ok:false,code:"simulated_execution_failure"};this.state.set(jobId,input.marker);return {ok:true,code:"simulated_marker_set"};}}
+export class SimulatedActionVerifier implements ActionVerifier{public constructor(private readonly state:InMemorySimulationState,private readonly scenario:"success"|"execution-fail"|"verification-fail"|"inconclusive"="success"){}async verify(jobId:string,input:ActionInput):Promise<VerificationResult>{if(this.scenario==="inconclusive")return {status:"Inconclusive",code:"simulated_verification_inconclusive"};if(this.scenario==="verification-fail")return {status:"Failed",code:"simulated_verification_failure"};return this.state.get(jobId)===input.marker?{status:"Passed",code:"simulated_marker_verified"}:{status:"Failed",code:"marker_mismatch"};}}

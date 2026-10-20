@@ -16,3 +16,5 @@ The Foundation phase closed at commit `836389002ff1dea8dcbcc72f30683f701c8a2758`
 The frozen invariants are: no automatic identity matching; no arbitrary command, shell or PowerShell capability; authority remains ephemeral and is never restored from history; RAW Evidence is not persisted; operator facts are not automatically AI-SAFE; and every durable identity link requires HumanReview.
 
 Existing capabilities include secure temporary sessions, durable read-only observations, Windows Preflight, restart reconciliation and a local CLI for Asset review. At the boundary of Foundation there was no Web console, corporate operator identity, RBAC, mutable Job/Action, approval engine, diagnostic reasoning, AI, persistent managed endpoint, deployment or LAN exposure.
+
+Post-Foundation status: CORE-001 added the local read-only console, CORE-002 added Operator identity/session authorization, and CORE-003 adds a durable orchestration proof restricted to one in-memory R1 simulation. The frozen prohibition on arbitrary command, PowerShell and Windows mutation remains unchanged.

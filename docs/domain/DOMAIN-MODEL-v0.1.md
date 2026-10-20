@@ -81,7 +81,7 @@ erDiagram
 - **Job ≠ Execution:** um Job pode ter tentativas; cada tentativa é uma CommandExecution.
 - **Execution result ≠ Verification ≠ Resolution.**
 - **Evidence ≠ Observation:** evidência é o artefato/dado; observação é a afirmação sustentada.
-- **ObservationRequest ≠ Job:** a primeira coordena coleta R0 read-only; um Job futuro poderá orquestrar Capability para uma Action, sem fundir conhecimento produzido com execução.
+- **ObservationRequest ≠ Job:** a primeira coordena coleta R0 read-only; o Job do CORE-003 orquestra uma Action simulada, sem fundir conhecimento produzido com execução.
 - **Execution outcome ≠ Reconciled outcome:** o Agent pode produzir um resultado que o Server rejeita ou classifica como tardio por perda de autoridade.
 - **Reconciliation ≠ Verification:** reconciliação valida pertencimento, correlação e autoridade do resultado; verificação avalia o objetivo operacional.
 - **Asset ≠ Endpoint observado ≠ AgentInstance ≠ Session:** um agente temporário pode abrir nova Session para o mesmo Asset; um endpoint observado pode permanecer não confirmado e não deve receber identidade confiável automaticamente.
@@ -101,6 +101,9 @@ erDiagram
 9. Ausência de resultado não prova ausência de execução; outcome desconhecido permanece explícito.
 10. Restart cria nova ServerInstance, encerra registros vivos anteriores e não recria Session nem redispara ObservationRequest.
 11. Evidence RAW não é persistida por padrão; Observation `MINIMIZED` não é implicitamente `AI-SAFE`.
+12. Job `Succeeded` exige Execution `Succeeded` e Verification `Passed`; ausência ou inconclusão nunca vira sucesso.
+13. A chave de idempotência é hash durável por Operator; mesma intenção retorna o mesmo Job e conteúdo divergente conflita.
+14. Nenhuma Action R2–R4 ou alvo Windows existe no CORE-003.
 
 ## Ainda não decidido
 

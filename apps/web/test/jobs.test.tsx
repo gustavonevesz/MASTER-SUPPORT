@@ -1,0 +1,8 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { renderToStaticMarkup } from "react-dom/server";
+import { JobDetailView,JobsView } from "../src/views.js";
+
+const job={jobId:"11111111-1111-4111-8111-111111111111",status:"AwaitingApproval" as const,risk:"R1" as const,actionId:"control-plane.simulation.set-marker",actionVersion:"1.0",targetKind:"ControlPlaneSimulation",requestedBy:"22222222-2222-4222-8222-222222222222",createdAt:"2026-10-20T12:00:00Z",updatedAt:"2026-10-20T12:00:00Z"};
+test("jobs list labels simulation and textual risk and hides request control from readers",()=>{const reader=renderToStaticMarkup(<JobsView data={{items:[job],page:1,pageSize:20,total:1,totalPages:1}} canRequest={false} onRequest={async()=>{}}/>);assert.match(reader,/SIMULATION ONLY/);assert.match(reader,/R1 · baixo/);assert.doesNotMatch(reader,/Solicitar marcador/);const tech=renderToStaticMarkup(<JobsView data={{items:[job],page:1,pageSize:20,total:1,totalPages:1}} canRequest onRequest={async()=>{}}/>);assert.match(tech,/Solicitar marcador simulado/);});
+test("job detail shows immutable timeline and permission-gated actions",()=>{const detail={...job,input:{marker:"safe"},policyEvaluations:[],approval:{status:"Pending"},executionAttempts:[],verificationAttempts:[],events:[{sequenceId:"1",eventId:"33333333-3333-4333-8333-333333333333",occurredAt:job.createdAt,eventType:"job.requested",metadata:{risk:"R1"}}]};const html=renderToStaticMarkup(<JobDetailView job={detail} canApprove canCancel onApprove={async()=>{}} onDeny={async()=>{}} onCancel={async()=>{}}/>);assert.match(html,/Aprovar explicitamente/);assert.match(html,/Cancelar antes da execução/);assert.match(html,/job.requested/);assert.match(html,/Nunca executa no Windows/);});

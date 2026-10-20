@@ -1,0 +1,5 @@
+.simulation-flag{background:#fff0cd;color:#765300;border:1px solid #edcd77;border-radius:5px;padding:8px 11px;font-size:10px;font-weight:900;letter-spacing:.1em}
+.action-form{display:grid;grid-template-columns:1fr 260px auto;gap:12px;align-items:center;background:#fff8e7;border:1px solid #efd48a;border-radius:9px;padding:16px;margin-bottom:18px}
+.action-form b,.action-form small{display:block}.action-form small{color:#746646;margin-top:4px;font-size:10px}.action-form input{padding:10px;border:1px solid #d4c289;border-radius:6px}.action-form button,.job-actions button{border:0;border-radius:6px;background:var(--teal);color:white;padding:10px 15px;font-weight:700}
+.job-list{display:grid;gap:8px}.job-list>a{display:grid;grid-template-columns:1fr auto auto 12px;align-items:center;gap:16px;background:white;border:1px solid var(--line);border-radius:8px;padding:15px 18px}.job-list b,.job-list small{display:block}.job-list small{color:var(--muted);font-size:10px;margin-top:4px}.risk{font-size:10px;font-weight:800}
+.job-actions{display:flex;gap:8px;margin-bottom:18px}.job-actions .danger{background:#9b3f3f}.job-actions .secondary{background:#63717d}

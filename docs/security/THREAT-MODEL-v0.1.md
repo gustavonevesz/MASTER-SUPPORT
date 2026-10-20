@@ -76,6 +76,11 @@ Ativos críticos: autoridade de execução, credenciais de sessão, identidades,
 | T-044 | Console sem autenticação é exposta na LAN (S/I) | crítico | bind literal `127.0.0.1` no Web e Control Plane; configuração diferente falha no startup; sem deploy nesta etapa |
 | T-045 | API envia RAW, segredo ou coluna nova por serialização acidental (I) | alto | DTOs explícitos, projeção allowlisted de facts, testes com canary e ausência de tabelas cruas |
 | T-046 | Conteúdo operacional injetado executa script no Browser (T/I) | alto | escaping do React, CSP, `nosniff`, frame denial, referrer policy e nenhuma renderização de HTML arbitrário |
+| T-047 | Chave repetida causa dupla execução ou payload divergente (T/R) | crítico | hash por operador, unique constraint, request hash e conflito 409; claim transacional único |
+| T-048 | Aprovação é reutilizada após alteração/expiração (T/E) | crítico | ActionRequest imutável, ApprovalRequest vinculada ao Job, TTL e revalidação antes do dispatch |
+| T-049 | Restart redispara ação de outcome incerto (T/D/R) | crítico | Executing/Verifying viram OutcomeUnknown; nenhum retry/redispatch automático |
+| T-050 | Feature simulada vira backdoor produtivo (E) | crítico | default off; startup falha fora de development ou do bind literal 127.0.0.1; único executor in-memory |
+| T-051 | Reader ou request cross-site cria/aprova Job (S/E) | crítico | permission check antes da criação, sessão BFF, Origin estrito, CSRF e auditoria de negação |
 
 ## Cenários de abuso prioritários
 

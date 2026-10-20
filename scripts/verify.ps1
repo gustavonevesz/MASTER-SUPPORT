@@ -58,7 +58,7 @@ try {
     Write-Host '== Repository checks =='
     Invoke-Checked git diff --check
 
-    Write-Host 'CORE-002 verification succeeded: Operator identity, OperatorSession, authorization, Web auth and security audit.'
+    Write-Host 'CORE-003 verification succeeded.'
 }
 finally {
     Pop-Location

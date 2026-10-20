@@ -137,6 +137,20 @@ O `POST` retorna `202` com a request criada; consulte `GET /dev/sessions/:sessio
 
 Cancelamento explícito usa `POST /dev/sessions/:sessionId/observations/:requestId/cancel`. `GET /dev/metrics` e `GET /dev/audit` expõem somente métricas e eventos sanitizados. Por padrão há no máximo 2 Observations ativas por Session e Agent, 1 por capability e 5 disparos por Session/capability a cada 10 segundos. Revogar, fechar ou expirar a Session cancela sua autoridade; disconnect cancela o trabalho local, marca requests aceitas/em execução como `abandoned` com outcome desconhecido e resume nunca as reenvia. Se PostgreSQL estiver indisponível, o Server falha no startup e uma nova Observation falha antes do dispatch.
 
+## CORE-003 — Safe Action Orchestration
+
+O Control Plane possui uma única Action de produto: `control-plane.simulation.set-marker@1.0`, alvo `ControlPlaneSimulation`, risco `R1` (baixo). Ela altera somente estado em memória do adapter de simulação; não chama Agent, shell, PowerShell, processos, registro, WMI ou qualquer API mutável do Windows. A feature é desligada por padrão.
+
+Para um ensaio local explícito, use somente modo development e bind literal loopback:
+
+```powershell
+$env:MASTER_SUPPORT_ENABLE_SIMULATED_ACTIONS='true'
+$env:MASTER_SUPPORT_MODE='development'
+$env:MASTER_SUPPORT_HOST='127.0.0.1'
+```
+
+O papel `OperatorTechnician`, provisionado com `npm run operator:manage --workspace @master-support/server -- provision-technician <provider> <subject> <display name>`, possui `console.read`, `action.request` e `action.approve`. `OperatorReader` continua somente leitura. Toda mutação exige sessão, permissão, Origin, CSRF e, ao criar Job, `Idempotency-Key`. Jobs, snapshots de policy, aprovações, tentativas, Verification e timeline são persistidos. Self-approval é permitida somente nessa simulação R1 e é auditada. Reinício nunca redispara execução incerta.
+
 ## Regra de evolução
 
-Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A FOUNDATION-008 concluiu a fase Foundation; CORE-001 estabelece a console local read-only. Etapas posteriores exigem novo gate e não foram iniciadas.
+Cada etapa deve ter escopo explícito, rastreabilidade entre requisitos, ADRs e implementação, verificação proporcional ao risco e relatório de encerramento. A FOUNDATION-008 concluiu a fase Foundation; CORE-001/002 estabeleceram console e identidade; CORE-003 estabelece orquestração segura estritamente simulada. Qualquer ação real exige novo gate.

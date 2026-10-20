@@ -20,9 +20,9 @@ test("empty database migrates, reapplies idempotently, and rejects a future sche
     await assert.rejects(PostgresPersistence.start(url), /database_schema_is_not_migrated/);
     await migrate(pool); await migrate(pool);
     const tables = await pool.query<{ tablename: string }>("SELECT tablename FROM pg_tables WHERE schemaname=current_schema() ORDER BY tablename");
-    assert.deepEqual(tables.rows.map(row => row.tablename), ["asset_endpoint_links", "assets", "audit_events", "evidence_metadata", "observation_requests",
-      "observations", "observed_endpoints", "operator_security_events", "operator_sessions", "operators", "preflight_observations", "preflight_runs", "preflight_snapshots",
-      "schema_migrations", "server_instances", "session_records", "support_invitations"]);
+    assert.deepEqual(tables.rows.map(row => row.tablename), ["action_requests","action_security_events","approval_decisions","approval_requests","asset_endpoint_links", "assets", "audit_events", "evidence_metadata","execution_attempts","job_events","jobs", "observation_requests",
+      "observations", "observed_endpoints", "operator_security_events", "operator_sessions", "operators","policy_evaluations", "preflight_observations", "preflight_runs", "preflight_snapshots",
+      "schema_migrations", "server_instances", "session_records", "support_invitations","verification_attempts"]);
     await pool.query("INSERT INTO schema_migrations(version,name,checksum) VALUES($1,$2,$3)", [999, "future.sql", "future"]);
     await assert.rejects(migrate(pool), /database_schema_is_newer/);
     await assert.rejects(PostgresPersistence.start(url), /database_schema_version_mismatch/);

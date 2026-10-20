@@ -1,0 +1,18 @@
+import type { Clock } from "../session/clock.js";
+import { parseActionInput,requireBoundedRequest,resolveAction } from "./catalog.js";
+import type { ActionExecutor,ActionVerifier } from "./ports.js";
+import { evaluatePolicy,type PolicyContext } from "./policy.js";
+import { ActionRepository,canonicalRequest,sha256 } from "./repository.js";
+import type { ActionRequestCommand } from "./models.js";
+
+export class ActionService{
+  constructor(public readonly repository:ActionRepository,private readonly clock:Clock,private readonly executor:ActionExecutor,private readonly verifier:ActionVerifier,private readonly policyContext:PolicyContext,private readonly approvalTtlMs=15*60_000){}
+  async request(command:ActionRequestCommand,operatorId:string,idempotencyKey:string){requireBoundedRequest(command);const input=parseActionInput(command.input);if(!input)throw new ActionError(400,"invalid_action_input");const normalized={...command,input};const policy=evaluatePolicy(normalized,this.policyContext);if(!resolveAction(normalized)||policy.decision==="Deny")throw new ActionError(422,"action_denied",policy.reasonCodes);const created=await this.repository.create(normalized,operatorId,sha256(idempotencyKey),sha256(canonicalRequest(normalized)),policy,this.clock.now(),this.approvalTtlMs);if(created.kind==="conflict")throw new ActionError(409,"idempotency_conflict");return {job:(await this.repository.get(created.jobId))!,replayed:created.kind==="replayed"};}
+  async approve(jobId:string,operatorId:string,decision:"Approved"|"Denied",reason?:string){const result=await this.repository.approve(jobId,operatorId,decision,reason,this.clock.now());if(result==="not_found")throw new ActionError(404,"job_not_found");if(result==="conflict")throw new ActionError(409,"approval_not_available");if(result==="expired")throw new ActionError(409,"approval_expired");if(result==="ready")await this.dispatch(jobId);return (await this.repository.get(jobId))!;}
+  async cancel(jobId:string,operatorId:string){const result=await this.repository.cancel(jobId,operatorId,this.clock.now());if(result==="not_found")throw new ActionError(404,"job_not_found");if(result==="conflict")throw new ActionError(409,"job_cannot_be_cancelled");return (await this.repository.get(jobId))!;}
+  list(page:number,pageSize:number){return this.repository.list(page,pageSize)}
+  get(jobId:string){return this.repository.get(jobId)}
+  async reconcileAndResume(){const result=await this.repository.reconcile(this.clock.now());for(const jobId of result.ready)await this.dispatch(jobId);return result;}
+  async dispatch(jobId:string){const detail=await this.repository.get(jobId);if(!detail)return;const command={actionId:detail.actionId,actionVersion:detail.actionVersion,targetKind:detail.targetKind,input:detail.input};const policy=evaluatePolicy(command,this.policyContext);const claim=await this.repository.claim(jobId,policy,this.clock.now());if(!claim)return;let execution;try{execution=await this.executor.execute(jobId,claim.input);}catch{execution={ok:false,code:"executor_exception"};}const verificationId=await this.repository.finishExecution(claim,execution.ok,execution.code,this.clock.now());if(!verificationId)return;let verification;try{verification=await this.verifier.verify(jobId,claim.input);}catch{verification={status:"Inconclusive" as const,code:"verifier_exception"};}await this.repository.finishVerification(jobId,verificationId,verification.status,verification.code,this.clock.now());}
+}
+export class ActionError extends Error{constructor(public readonly status:number,message:string,public readonly reasons:readonly string[]=[]){super(message)}}

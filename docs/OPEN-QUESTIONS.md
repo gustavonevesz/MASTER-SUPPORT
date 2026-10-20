@@ -2,6 +2,8 @@
 
 CORE-002 resolveu a autenticação da console local: OIDC é o provider de produção e Operator preprovisionado recebe somente `console.read`. Permanecem abertas a configuração concreta do IdP, sincronização de revogação/logout do IdP, RBAC futuro e qualquer exposição remota — que continua proibida.
 
+CORE-003 resolve apenas a prova R1 simulada. Segregação de funções, step-up, approvals R2–R4, execução real em endpoint, rollback, retry e política durante perda de uma Support Session continuam explicitamente fora do escopo.
+
 CORE-001 resolveu a projeção read-only; CORE-002 resolveu a identidade e autorização local com OIDC configurável, preprovisionamento e `console.read`. RAW Evidence, secrets e payloads internos continuam proibidos. Permanecem abertas a configuração do IdP corporativo real, RBAC mutável futuro, retenção, publicação segura e a fonte confiável de presença `ONLINE NOW`.
 
 OQ-002 foi resolvida para o inventário operacional pela ADR-014: somente `HumanReview` explícito cria o vínculo, sem prova automática por hostname ou fingerprint. A estratégia de autenticação do operador foi resolvida pela ADR-016, embora a configuração do IdP corporativo real permaneça aberta. A prova criptográfica futura do equipamento continua aberta; `local_operator` é atribuição histórica honesta, não identidade verificável.

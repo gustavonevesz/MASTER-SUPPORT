@@ -52,6 +52,7 @@ O sistema deverá possuir uma fronteira de classificação/redaction antes de lo
 | `system.runtime.summary` | Evidence `RAW` efêmera, máximo 16 KiB; PostgreSQL recebe só EvidenceMetadata e nove fatos allowlisted na Observation `MINIMIZED`; sem IA e sem RAW em logs/consulta |
 | Resultado tardio | descartar o payload/Evidence RAW; persistir no máximo AuditEvent com IDs, tipo, instante, tamanho e motivo sanitizados |
 | Métricas e AuditEvents da Observation | somente contagens, estado, IDs técnicos, capability, duração, tamanho e motivo; AuditEvent durável nunca contém payload, hostname, usuário, token ou Evidence RAW |
+| Action R1 simulada | marcador estruturado de até 64 caracteres; request imutável; chave de idempotência somente em hash; snapshots de policy, aprovação, tentativas e eventos sem segredo ou saída arbitrária |
 
 ## Regras iniciais
 

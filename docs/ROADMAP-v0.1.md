@@ -74,6 +74,10 @@ Uma capability Windows somente leitura, inventário mínimo, Evidence estruturad
 
 Uma ação segura/reversível, policy/approval mínima, timeout/cancelamento, estado antes/depois e Verification explícita. Exercitar falha e resultado parcial.
 
+## CORE-003 — Safe Action Orchestration
+
+Status: concluída. Uma única Action R1 simulada no Control Plane prova Job durável, política versionada default-deny, aprovação explícita, idempotência concorrente, claim único, Verification independente, timeline/auditoria e reconciliação conservadora. Não existe execução Windows nem retry automático.
+
 ## HARDENING-001 — Pilot readiness
 
 Threat model atualizado, bootstrap/identidade robustos, secrets/redaction, quotas, auditoria, observabilidade, distribuição assinada quando aplicável, testes de abuso e runbooks.

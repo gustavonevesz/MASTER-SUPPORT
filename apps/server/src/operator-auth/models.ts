@@ -1,6 +1,8 @@
 export const consoleReadPermission = "console.read" as const;
+export const actionRequestPermission = "action.request" as const;
+export const actionApprovePermission = "action.approve" as const;
 export type OperatorStatus = "Active" | "Disabled";
-export type OperatorRole = "OperatorReader";
+export type OperatorRole = "OperatorReader"|"OperatorTechnician";
 export type ProviderIdentity = Readonly<{ provider: string; providerSubject: string; displayName: string }>;
 export type AuthenticatedOperator = Readonly<{ operatorId: string; displayName: string; role?: OperatorRole; permissions: readonly string[] }>;
 export type OperatorSessionView = Readonly<{ operatorSessionId: string; operator: AuthenticatedOperator; csrfToken: string }>;

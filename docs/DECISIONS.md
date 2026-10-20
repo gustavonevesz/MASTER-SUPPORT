@@ -6,6 +6,7 @@ ADR-015 aceita a Operator Console como React SPA estritamente local e read-only.
 
 | ADR | Decisão resumida | Status |
 |---|---|---|
+| [ADR-017](adr/ADR-017-safe-action-orchestration.md) | Job durável, política default-deny, aprovação e verificação para uma única Action R1 simulada | Aceito |
 | [ADR-016](adr/ADR-016-operator-authentication-strategy.md) | OIDC + PKCE, preprovisionamento, OperatorSession BFF e `console.read` | Aceito |
 | [ADR-001](adr/ADR-001-language-and-runtime-strategy.md) | TypeScript/Node no Control Plane/Web; C#/.NET no Runtime; Python futuro | Aceito |
 | [ADR-002](adr/ADR-002-repository-structure.md) | Monorepo poliglota, monólito modular inicial | Aceito |
